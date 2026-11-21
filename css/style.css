@@ -214,7 +214,6 @@ a {
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-card);
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
@@ -288,12 +287,10 @@ a {
 
 .current-weather {
   margin-top: var(--space-24);
-  padding: var(--space-24);
-  padding-bottom: var(--space-32);
+  padding: 19px var(--space-20) 18px;
   background: var(--color-warm-charcoal);
   border-radius: var(--radius-xlarge);
   color: var(--app-surface);
-  box-shadow: var(--shadow-soft);
 }
 
 .current-weather__top {
@@ -313,12 +310,12 @@ a {
   font-size: 11px;
   font-weight: 500;
   line-height: 16px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .current-weather__city {
-  margin: var(--space-4) 0 0;
+  margin: 14px 0 0;
   color: var(--app-surface);
   font-size: var(--font-size-heading-h2);
   font-weight: 500;
@@ -327,7 +324,7 @@ a {
 }
 
 .current-weather__date {
-  margin: var(--space-4) 0 0;
+  margin: 7px 0 0;
   color: rgba(255, 254, 250, 0.72);
   font-size: var(--font-size-body-small);
   line-height: var(--line-height-body-small);
@@ -336,15 +333,15 @@ a {
 .weather-icon--hero {
   width: 24px;
   height: 24px;
-  margin-top: 2px;
+  margin-top: 29px;
   color: var(--app-accent);
 }
 
 .current-weather__reading {
   display: flex;
   align-items: center;
-  gap: var(--space-16);
-  margin-top: var(--space-8);
+  gap: 19px;
+  margin-top: 14px;
 }
 
 .current-weather__temperature {
@@ -386,8 +383,8 @@ a {
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-12);
-  margin: var(--space-24) 0 0;
+  gap: var(--space-12) var(--space-16);
+  margin: 25px 0 0;
 }
 
 .metric-card {
@@ -396,13 +393,13 @@ a {
   grid-template-areas:
     "label icon"
     "value value";
-  gap: var(--space-4);
+  gap: var(--space-12);
   align-items: start;
   padding: var(--space-16);
+  padding-bottom: 11px;
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-card);
 }
 
 .metric-card__label {
@@ -443,7 +440,11 @@ a {
 }
 
 .forecast {
-  margin-top: var(--space-32);
+  margin-top: 25px;
+}
+
+.forecast .section-title {
+  margin-bottom: 11px;
 }
 
 .forecast-list {
@@ -457,14 +458,18 @@ a {
 
 .forecast-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1.085fr)
+    minmax(0, 1.09fr)
+    minmax(0, 0.65fr);
   align-items: center;
-  padding-block: var(--space-16);
+  min-height: 60px;
+  padding-block: 8px;
   padding-inline: var(--space-16);
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   border-radius: var(--radius-medium);
-  box-shadow: var(--shadow-card);
 }
 
 .forecast-row__day {
@@ -477,6 +482,7 @@ a {
 
 .forecast-row__condition {
   display: flex;
+  align-self: stretch;
   align-items: center;
   justify-content: center;
   padding-inline: var(--space-12);
@@ -485,16 +491,17 @@ a {
 }
 
 .forecast-row__condition .icon {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
 }
 
 .forecast-temp {
   display: flex;
-  align-items: baseline;
+  align-self: stretch;
+  align-items: center;
   justify-content: center;
   gap: 2px;
-  min-width: 64px;
+  min-width: 0;
   margin: 0;
   padding-inline: var(--space-8);
   border-left: 1px solid var(--app-border);
@@ -514,8 +521,9 @@ a {
 /* --- Search Locations screen --------------------------------------------- */
 
 .search-header {
-  gap: var(--space-12);
-  margin-bottom: var(--space-12);
+  gap: 2px;
+  margin-top: -6px;
+  margin-bottom: 18px;
 }
 
 .icon-button {
@@ -538,8 +546,8 @@ a {
 }
 
 .icon-button .icon {
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
 }
 
 .search-header__title {
@@ -567,11 +575,19 @@ a {
 }
 
 .recent-searches {
-  margin-top: var(--space-24);
+  margin-top: 24.5px;
+}
+
+.recent-searches .section-title {
+  margin-bottom: 9px;
 }
 
 .search-results {
-  margin-top: var(--space-20);
+  margin-top: 25px;
+}
+
+.search-results .section-title {
+  margin-bottom: 11px;
 }
 
 .chip-list {
@@ -585,13 +601,13 @@ a {
 
 .chip {
   min-height: 36px;
-  padding: var(--space-8) var(--space-16);
+  padding: var(--space-8) 12px;
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   border-radius: var(--radius-full);
   color: var(--app-text);
-  font-size: var(--font-size-body-default);
-  line-height: var(--line-height-body-default);
+  font-size: 13px;
+  line-height: var(--line-height-body-small);
   cursor: pointer;
 }
 
@@ -611,14 +627,14 @@ a {
 .result-row {
   display: flex;
   align-items: center;
-  gap: var(--space-12);
+  gap: 10px;
   width: 100%;
-  padding-block: var(--space-12);
-  padding-inline: var(--space-16);
+  min-height: 64px;
+  padding-block: 10px;
+  padding-inline: 10px;
   background: var(--app-surface);
-  border: 1px solid var(--app-border);
+  border: 0;
   border-radius: var(--radius-large);
-  box-shadow: var(--shadow-card);
   color: var(--app-text);
   text-align: left;
   cursor: pointer;
@@ -629,8 +645,8 @@ a {
 }
 
 .result-row__icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   color: var(--app-icon-muted);
 }
 
@@ -638,7 +654,7 @@ a {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 2px;
+  gap: 5px;
   min-width: 0;
 }
 
