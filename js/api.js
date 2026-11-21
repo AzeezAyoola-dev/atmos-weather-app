@@ -1,11 +1,77 @@
 /**
  * Open-Meteo API access layer.
  *
- * Phase 1: endpoint constants only.
- * Geocoding requests arrive in Phase 5; forecast requests arrive in Phase 6.
+ * Phase 5: geocoding requests for city search.
+ * Forecast requests remain reserved for Phase 6.
  */
 
 export const API_ENDPOINTS = Object.freeze({
   geocoding: 'https://geocoding-api.open-meteo.com/v1/search',
   forecast: 'https://api.open-meteo.com/v1/forecast',
 });
+
+export const GEOCODING_RESULT_COUNT = 5;
+
+/**
+ * Fetch cities matching a query from the Open-Meteo Geocoding API.
+ *
+ * @param {string} query Trimmed search text.
+ * @param {{signal?: AbortSignal}} [options] Optional abort signal.
+ * @returns {Promise<object[]>} Normalized city results.
+ */
+export async function fetchCityResults(query, { signal } = {}) {
+  const url = new URL(API_ENDPOINTS.geocoding);
+  url.searchParams.set('name', query);
+  url.searchParams.set('count', String(GEOCODING_RESULT_COUNT));
+  url.searchParams.set('language', 'en');
+  url.searchParams.set('format', 'json');
+
+  const response = await fetch(url, {
+    signal,
+    headers: { Accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Geocoding API returned ${response.status}`);
+  }
+
+  const payload = await response.json();
+  if (!payload || !Array.isArray(payload.results)) {
+    return [];
+  }
+
+  return payload.results
+    .map(normalizeCityResult)
+    .filter((city) => city !== null);
+}
+
+/**
+ * Convert one API result into the shape used by the application.
+ *
+ * @param {object} result Raw geocoding result.
+ * @returns {object|null} Normalized result, or null when required data is missing.
+ */
+function normalizeCityResult(result) {
+  const name = getTrimmedString(result?.name);
+  const country = getTrimmedString(result?.country);
+  const latitude = Number(result?.latitude);
+  const longitude = Number(result?.longitude);
+
+  if (!name || !country || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  return {
+    id: result.id ?? null,
+    name,
+    region: getTrimmedString(result.admin1),
+    country,
+    latitude,
+    longitude,
+    timezone: getTrimmedString(result.timezone),
+  };
+}
+
+function getTrimmedString(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}

@@ -565,10 +565,14 @@ a {
   line-height: var(--line-height-body-default);
 }
 
+.search-hint[data-state="error"] {
+  color: var(--app-accent-strong);
+}
+
 /*
- * The approved results screen omits the hint. Hiding it from CSS keeps the
- * static preview faithful and lets the future search script drive the state
- * through the existing `hidden` attribute.
+ * The approved results screen omits the hint. The search controller hides it
+ * while results are visible; this rule also keeps the static markup faithful
+ * before JavaScript runs.
  */
 #search-view:has(#search-results:not([hidden])) .search-hint {
   display: none;
@@ -642,6 +646,10 @@ a {
 
 .result-row:hover {
   border-color: var(--app-icon-muted);
+}
+
+.result-row[aria-pressed="true"] {
+  background: var(--app-bg);
 }
 
 .result-row__icon {
