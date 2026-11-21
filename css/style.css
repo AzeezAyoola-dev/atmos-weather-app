@@ -371,6 +371,10 @@ a {
   line-height: var(--line-height-heading-h3);
 }
 
+.current-weather__summary[data-state="error"] {
+  color: var(--app-accent);
+}
+
 .current-weather__feels {
   margin: var(--space-4) 0 0;
   color: rgba(255, 254, 250, 0.72);

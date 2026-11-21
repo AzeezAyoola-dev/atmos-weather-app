@@ -1,13 +1,13 @@
 /**
  * Atmos application entry point.
  *
- * Phase 5: boot the module graph, switch between the dashboard and search
- * screens, and run the city search controller. Weather rendering and recent
- * search persistence remain reserved for later phases.
+ * Phase 5: view switching and city search.
+ * Phase 6: load and render current weather for the selected city.
+ * Recent search persistence remains reserved for a later phase.
  */
 
-import './api.js';
-import './weather.js';
+import { fetchCurrentWeather } from './api.js';
+import { renderCurrentWeather, showWeatherError, showWeatherLoading } from './weather.js';
 import './storage.js';
 import { createCitySearchController } from './search.js';
 
@@ -31,9 +31,12 @@ const searchController = createCitySearchController({
   results: searchResults,
   list: resultList,
   status: appStatus,
+  onCitySelected: handleCitySelection,
 });
 
 let switchingView = false;
+let weatherController = null;
+let weatherRequestId = 0;
 
 function openSearchView(query = '') {
   switchingView = true;
@@ -53,6 +56,54 @@ function openDashboardView() {
   dashboardView.hidden = false;
   dashboardInput.focus();
   switchingView = false;
+}
+
+function handleCitySelection(city) {
+  openDashboardView();
+  loadCurrentWeather(city);
+}
+
+async function loadCurrentWeather(city) {
+  if (weatherController) {
+    weatherController.abort();
+  }
+
+  const requestId = ++weatherRequestId;
+  const controller = new AbortController();
+  weatherController = controller;
+  const cityLabel = [city?.name, city?.country].filter(Boolean).join(', ');
+
+  showWeatherLoading(city);
+  announce(`Loading current weather for ${cityLabel}.`);
+
+  try {
+    const weather = await fetchCurrentWeather(city, { signal: controller.signal });
+
+    if (controller.signal.aborted || requestId !== weatherRequestId) {
+      return;
+    }
+
+    renderCurrentWeather(city, weather);
+    announce(`Current weather loaded for ${cityLabel}.`);
+  } catch (error) {
+    if (controller.signal.aborted || requestId !== weatherRequestId) {
+      return;
+    }
+
+    showWeatherError(city);
+    announce(`Weather data could not be loaded for ${cityLabel}. Please try again.`);
+  } finally {
+    if (weatherController === controller) {
+      weatherController = null;
+    }
+  }
+}
+
+function announce(message) {
+  appStatus.textContent = '';
+  requestAnimationFrame(() => {
+    appStatus.textContent = message;
+  });
 }
 
 dashboardInput.addEventListener('focus', () => {

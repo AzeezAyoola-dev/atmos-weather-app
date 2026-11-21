@@ -4,30 +4,31 @@
 
 Atmos is a responsive weather web application built with HTML5, CSS3 and
 vanilla JavaScript. It uses the Open-Meteo Geocoding API for city search and
-the Open-Meteo Forecast API for current conditions and a five-day forecast.
+the Open-Meteo Forecast API for current conditions.
 
 ## Status
 
-**Phase 5 — city search and geocoding.** The Search Locations screen is now
-functional: it validates input, debounces requests by 350ms, calls the
-Open-Meteo Geocoding API after at least two characters, renders matching cities
-with region and country details, and shows loading, no-results and network-error
-feedback. Selecting a result stores the city in shared in-memory application
-state for the next phase.
+**Phase 6 — current weather integration.** Selecting a city in Search Locations
+now returns to the Weather Dashboard and fetches current conditions from the
+Open-Meteo Forecast API using the selected city's latitude, longitude and
+timezone. The dashboard city, country, local date/time, temperature, condition
+icon and description, feels-like temperature, humidity, wind speed and available
+visibility are updated in place, with loading and error feedback.
 
-Weather retrieval, dashboard updates, recent-search persistence and deployment
-are still reserved for later phases.
+The five-day forecast remains a static sample. Recent-search persistence and
+deployment are reserved for later phases.
 
 ## Stack
 
 - HTML5
 - CSS3
 - Vanilla JavaScript (ES modules)
-- Open-Meteo Geocoding API (Forecast API reserved for Phase 6)
+- Open-Meteo Geocoding API
+- Open-Meteo Forecast API for current conditions
 - Browser `fetch` and `AbortController`
 
 No frameworks, no backend and no package dependencies. `localStorage` is
-reserved for a later phase and is not used in Phase 5.
+reserved for a later phase and is not used in Phase 6.
 
 ## Project structure
 
@@ -38,9 +39,9 @@ ATMOS/
 │   ├── variables.css      Existing design tokens
 │   └── style.css          Shell and screen styles
 ├── js/
-│   ├── app.js             Entry point, view switching and search setup
-│   ├── api.js             Open-Meteo endpoints and geocoding requests
-│   ├── weather.js         Forecast configuration
+│   ├── app.js             Entry point, view switching and orchestration
+│   ├── api.js             Open-Meteo geocoding and current-weather requests
+│   ├── weather.js         Weather codes, formatting and dashboard rendering
 │   ├── search.js          Validation, debounce, rendering and selection
 │   ├── state.js           Shared in-memory selected-city state
 │   └── storage.js         Recent-search storage contract
@@ -80,7 +81,21 @@ of truth. The **warm palette** from those screenshots is authoritative.
 - Loading, no-results and network-error states use the existing hint element and
   are announced through the existing live region.
 - Selecting a result stores `name`, `region`, `country`, `latitude`, `longitude`
-  and `timezone` in `js/state.js` for Phase 6. Nothing is persisted yet.
+  and `timezone` in `js/state.js`. Nothing is persisted yet.
+
+## Phase 6 current weather behaviour
+
+- Selecting a result returns to the dashboard and loads current weather.
+- Requests use the selected city's coordinates and timezone, with Celsius
+  temperatures and km/h wind speed requested explicitly.
+- The city heading, country, local date/time, temperature, WMO condition icon
+  and description, feels-like value, humidity, wind speed and visibility are
+  updated from the API response.
+- Visibility is converted from metres to kilometres when the API reports metres.
+- Loading and API/network errors are shown in the existing dashboard components
+  and announced through the existing live region.
+- The five-day forecast is not API-driven yet; its rows remain the approved
+  static sample.
 
 ## Accessibility note
 

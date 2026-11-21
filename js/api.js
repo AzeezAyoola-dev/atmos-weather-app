@@ -2,7 +2,8 @@
  * Open-Meteo API access layer.
  *
  * Phase 5: geocoding requests for city search.
- * Forecast requests remain reserved for Phase 6.
+ * Phase 6: current-weather requests for the selected city.
+ * Daily forecast requests remain reserved for a later phase.
  */
 
 export const API_ENDPOINTS = Object.freeze({
@@ -11,6 +12,15 @@ export const API_ENDPOINTS = Object.freeze({
 });
 
 export const GEOCODING_RESULT_COUNT = 5;
+
+export const CURRENT_WEATHER_VARIABLES = Object.freeze([
+  'temperature_2m',
+  'relative_humidity_2m',
+  'apparent_temperature',
+  'weather_code',
+  'wind_speed_10m',
+  'visibility',
+]);
 
 /**
  * Fetch cities matching a query from the Open-Meteo Geocoding API.
@@ -70,6 +80,75 @@ function normalizeCityResult(result) {
     longitude,
     timezone: getTrimmedString(result.timezone),
   };
+}
+
+/**
+ * Fetch current weather for a geocoded city.
+ *
+ * @param {object} city City from shared state with latitude, longitude and timezone.
+ * @param {{signal?: AbortSignal}} [options] Optional abort signal.
+ * @returns {Promise<object>} Normalized current-weather data.
+ */
+export async function fetchCurrentWeather(city, { signal } = {}) {
+  const latitude = Number(city?.latitude);
+  const longitude = Number(city?.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new Error('Selected city has no coordinates');
+  }
+
+  const url = new URL(API_ENDPOINTS.forecast);
+  url.searchParams.set('latitude', String(latitude));
+  url.searchParams.set('longitude', String(longitude));
+  url.searchParams.set('current', CURRENT_WEATHER_VARIABLES.join(','));
+  url.searchParams.set('temperature_unit', 'celsius');
+  url.searchParams.set('wind_speed_unit', 'kmh');
+
+  if (getTrimmedString(city.timezone)) {
+    url.searchParams.set('timezone', city.timezone.trim());
+  }
+
+  const response = await fetch(url, {
+    signal,
+    headers: { Accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Forecast API returned ${response.status}`);
+  }
+
+  const payload = await response.json();
+  return normalizeCurrentWeather(payload);
+}
+
+function normalizeCurrentWeather(payload) {
+  const current = payload?.current;
+  if (!current || typeof current !== 'object') {
+    throw new Error('Weather response has no current conditions');
+  }
+
+  const time = getTrimmedString(current.time);
+  if (!time) {
+    throw new Error('Weather response has no current time');
+  }
+
+  return {
+    time,
+    temperature: toFiniteNumber(current.temperature_2m),
+    feelsLike: toFiniteNumber(current.apparent_temperature),
+    humidity: toFiniteNumber(current.relative_humidity_2m),
+    weatherCode: toFiniteNumber(current.weather_code),
+    windSpeed: toFiniteNumber(current.wind_speed_10m),
+    visibility: toFiniteNumber(current.visibility),
+    units: payload.current_units && typeof payload.current_units === 'object'
+      ? payload.current_units
+      : {},
+  };
+}
+
+function toFiniteNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
 function getTrimmedString(value) {

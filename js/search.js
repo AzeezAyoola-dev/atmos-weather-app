@@ -37,6 +37,7 @@ export function formatCityLabel(city) {
  * Create the controller for the Search Locations screen.
  *
  * @param {object} elements Existing DOM elements from index.html.
+ * @param {Function} [elements.onCitySelected] Called after a result is selected.
  * @returns {{runQuery: Function, reset: Function, clear: Function}} Controller API.
  */
 export function createCitySearchController({
@@ -47,6 +48,7 @@ export function createCitySearchController({
   results,
   list,
   status,
+  onCitySelected,
 }) {
   let debounceTimer = null;
   let activeController = null;
@@ -190,7 +192,7 @@ export function createCitySearchController({
   }
 
   function selectCity(city, selectedButton) {
-    setSelectedCity(city);
+    const selectedCity = setSelectedCity(city);
 
     list.querySelectorAll('.result-row').forEach((row) => {
       row.setAttribute('aria-pressed', row === selectedButton ? 'true' : 'false');
@@ -199,6 +201,10 @@ export function createCitySearchController({
     input.value = city.name;
     clearButton.hidden = false;
     announce(`${city.name}, ${formatCityLabel(city)} selected.`);
+
+    if (typeof onCitySelected === 'function') {
+      onCitySelected(selectedCity);
+    }
   }
 
   function runQuery(query) {
