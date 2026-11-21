@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Atmos — a clearer view of the weather. Search cities and view current conditions and a five-day forecast.">
+  <meta name="theme-color" content="#F3F0E9">
+  <meta name="color-scheme" content="light">
+  <title>Atmos — A clearer view of the weather</title>
+
+  <!-- Temporary blank favicon; final branding asset is added in a later phase. -->
+  <link rel="icon" href="data:,">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <main id="main-content" class="app-shell" aria-label="Atmos weather application">
+    <h1 class="sr-only">Atmos weather</h1>
+
+    <header class="app-header">
+      <p class="wordmark">ATMOS</p>
+    </header>
+
+    <p class="setup-status" role="status">
+      Project setup complete. The weather interface will be built in the next phase.
+    </p>
+  </main>
+
+  <noscript>
+    <p class="noscript-message">
+      Atmos needs JavaScript enabled to load weather information.
+    </p>
+  </noscript>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

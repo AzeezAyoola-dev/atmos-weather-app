@@ -1,0 +1,15 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor settings
+.vscode/
+.idea/
+
+# Dependencies (not used by the current static build)
+node_modules/
+
+# Local environment files
+.env
+.env.*

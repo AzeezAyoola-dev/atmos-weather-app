@@ -1,0 +1,230 @@
+/* ==========================================================================
+   ATMOS — Design Tokens
+   --------------------------------------------------------------------------
+   Source: design/design-tokens.tokens (2).json
+   Token collections: font, effect, Atmos/Colors, Atmos/warm colors,
+   Spacing, Radius, typography.
+
+   This file only declares CSS custom properties. It contains no component
+   styles, layout rules or application screens.
+
+   Conversion notes
+   ----------------
+   • Color values are preserved exactly as exported, including 8-digit hex
+     alpha. In #RRGGBBAA, the final "ff" means fully opaque.
+   • Every font style is provided twice: as individual properties
+     (size, weight, line height, etc.) and as a composite font shorthand
+     (--font-*). The shorthand does not include letter-spacing,
+     text-decoration, text-transform, font-stretch or text-indent because
+     CSS font shorthand cannot carry them; apply those individual variables
+     alongside the shorthand where needed.
+   • Figma "paragraphSpacing" has no direct CSS property. Its value is kept
+     in --paragraph-spacing-* for use as a margin/gap where required.
+   • Figma's shadow "radius" is a blur radius and is converted to the third
+     length in the CSS box-shadow order: offset-x offset-y blur spread color.
+   • Figma metadata (styleId, variableId, collection, scopes, exportKey,
+     blendMode, token type) is tooling data, not a visual value, so it is
+     not converted into CSS.
+   • No design values have been added, changed or inferred.
+   ========================================================================== */
+
+:root {
+   /* ==========================================================================
+     COLORS
+     ========================================================================== */
+
+   /* Brand — atmos.colors.brand.* */
+   --color-brand-deep-blue: #233d5bff;
+   --color-brand-sky-blue: #579bffff;
+   --color-brand-sunlight: #ffc857ff;
+
+   /* Background — atmos.colors.background.* */
+   --color-background-primary: #f5f7faff;
+   --color-background-surface: #ffffffff;
+   --color-background-dark: #17263bff;
+
+   /* Text — atmos.colors.text.* */
+   --color-text-primary: #17212fff;
+   --color-text-secondary: #78879aff;
+   --color-text-muted: #a7b4c7ff;
+   --color-text-inverse: #ffffffff;
+
+   /* Border — atmos.colors.text.border.default */
+   --color-border-default: #dce4edff;
+
+   /* Warm palette — atmos.warm colors.*
+     Present in the token file but not listed in the PRD palette. */
+   --color-warm-background: #f3f0e9ff;
+   --color-warm-surface: #fffefaff;
+   --color-warm-charcoal: #252923ff;
+   --color-warm-muted-olive: #85866aff;
+   --color-warm-soft-amber: #d6a45dff;
+   --color-warm-text-secondary: #85847dff;
+   --color-warm-border: #e3ded3ff;
+   --color-warm-inverse: #ffffffff;
+
+   /* ==========================================================================
+     TYPOGRAPHY
+     ========================================================================== */
+
+   /* Shared font family — every text style uses Inter */
+   --font-family-base: Inter;
+
+   /* Label — font.label / typography.label.* */
+   --font-size-label: 12px;
+   --font-weight-label: 400;
+   --line-height-label: 18px;
+   --letter-spacing-label: 0;
+   --font-style-label: normal;
+   --font-stretch-label: normal;
+   --text-decoration-label: none;
+   --text-transform-label: none;
+   --text-indent-label: 0;
+   --paragraph-spacing-label: 0;
+
+   /* Value — font.value / typography.value.*
+     Note: the source token pairs a 22px font size with an 18px line height.
+     The values are preserved as supplied. */
+   --font-size-value: 22px;
+   --font-weight-value: 400;
+   --line-height-value: 18px;
+   --letter-spacing-value: 0;
+   --font-style-value: normal;
+   --font-stretch-value: normal;
+   --text-decoration-value: none;
+   --text-transform-value: none;
+   --text-indent-value: 0;
+   --paragraph-spacing-value: 0;
+
+   /* Display / Temperature — font.display.temperature / typography.display.temperature.* */
+   --font-size-display-temperature: 80px;
+   --font-weight-display-temperature: 400;
+   --line-height-display-temperature: 88px;
+   --letter-spacing-display-temperature: 0;
+   --font-style-display-temperature: normal;
+   --font-stretch-display-temperature: normal;
+   --text-decoration-display-temperature: none;
+   --text-transform-display-temperature: none;
+   --text-indent-display-temperature: 0;
+   --paragraph-spacing-display-temperature: 0;
+
+   /* Heading H1 — font.heading.h1 / typography.heading.h1.* */
+   --font-size-heading-h1: 36px;
+   --font-weight-heading-h1: 500;
+   --line-height-heading-h1: 44px;
+   --letter-spacing-heading-h1: 0;
+   --font-style-heading-h1: normal;
+   --font-stretch-heading-h1: normal;
+   --text-decoration-heading-h1: none;
+   --text-transform-heading-h1: none;
+   --text-indent-heading-h1: 0;
+   --paragraph-spacing-heading-h1: 0;
+
+   /* Heading H2 — font.heading.h2 / typography.heading.h2.* */
+   --font-size-heading-h2: 24px;
+   --font-weight-heading-h2: 500;
+   --line-height-heading-h2: 32px;
+   --letter-spacing-heading-h2: 0;
+   --font-style-heading-h2: normal;
+   --font-stretch-heading-h2: normal;
+   --text-decoration-heading-h2: none;
+   --text-transform-heading-h2: none;
+   --text-indent-heading-h2: 0;
+   --paragraph-spacing-heading-h2: 0;
+
+   /* Heading H3 — font.heading.h3 / typography.heading.h3.* */
+   --font-size-heading-h3: 18px;
+   --font-weight-heading-h3: 600;
+   --line-height-heading-h3: 26px;
+   --letter-spacing-heading-h3: 0;
+   --font-style-heading-h3: normal;
+   --font-stretch-heading-h3: normal;
+   --text-decoration-heading-h3: none;
+   --text-transform-heading-h3: none;
+   --text-indent-heading-h3: 0;
+   --paragraph-spacing-heading-h3: 0;
+
+   /* Body Large — font.body.large / typography.body.large.* */
+   --font-size-body-large: 16px;
+   --font-weight-body-large: 400;
+   --line-height-body-large: 24px;
+   --letter-spacing-body-large: 0;
+   --font-style-body-large: normal;
+   --font-stretch-body-large: normal;
+   --text-decoration-body-large: none;
+   --text-transform-body-large: none;
+   --text-indent-body-large: 0;
+   --paragraph-spacing-body-large: 0;
+
+   /* Body Default — font.body.default / typography.body.default.* */
+   --font-size-body-default: 14px;
+   --font-weight-body-default: 400;
+   --line-height-body-default: 20px;
+   --letter-spacing-body-default: 0;
+   --font-style-body-default: normal;
+   --font-stretch-body-default: normal;
+   --text-decoration-body-default: none;
+   --text-transform-body-default: none;
+   --text-indent-body-default: 0;
+   --paragraph-spacing-body-default: 0;
+
+   /* Body Small — font.body.small / typography.body.small.*
+     Note: identical values to the Label style. */
+   --font-size-body-small: 12px;
+   --font-weight-body-small: 400;
+   --line-height-body-small: 18px;
+   --letter-spacing-body-small: 0;
+   --font-style-body-small: normal;
+   --font-stretch-body-small: normal;
+   --text-decoration-body-small: none;
+   --text-transform-body-small: none;
+   --text-indent-body-small: 0;
+   --paragraph-spacing-body-small: 0;
+
+   /* Composite text styles — font shorthand: weight size/line-height family.
+     Apply the corresponding --letter-spacing-* and --text-* variables
+     separately when those properties are needed. */
+   --font-label: var(--font-weight-label) var(--font-size-label) / var(--line-height-label) var(--font-family-base);
+   --font-value: var(--font-weight-value) var(--font-size-value) / var(--line-height-value) var(--font-family-base);
+   --font-display-temperature: var(--font-weight-display-temperature) var(--font-size-display-temperature) / var(--line-height-display-temperature) var(--font-family-base);
+   --font-heading-h1: var(--font-weight-heading-h1) var(--font-size-heading-h1) / var(--line-height-heading-h1) var(--font-family-base);
+   --font-heading-h2: var(--font-weight-heading-h2) var(--font-size-heading-h2) / var(--line-height-heading-h2) var(--font-family-base);
+   --font-heading-h3: var(--font-weight-heading-h3) var(--font-size-heading-h3) / var(--line-height-heading-h3) var(--font-family-base);
+   --font-body-large: var(--font-weight-body-large) var(--font-size-body-large) / var(--line-height-body-large) var(--font-family-base);
+   --font-body-default: var(--font-weight-body-default) var(--font-size-body-default) / var(--line-height-body-default) var(--font-family-base);
+   --font-body-small: var(--font-weight-body-small) var(--font-size-body-small) / var(--line-height-body-small) var(--font-family-base);
+
+   /* ==========================================================================
+     SPACING
+     Values are exported as unitless dimensions and expressed in px.
+     ========================================================================== */
+
+   --space-4: 4px;
+   --space-8: 8px;
+   --space-12: 12px;
+   --space-16: 16px;
+   --space-20: 20px;
+   --space-24: 24px;
+   --space-32: 32px;
+   --space-40: 40px;
+   --space-48: 48px;
+   --space-64: 64px;
+
+   /* ==========================================================================
+     BORDER RADIUS
+     ========================================================================== */
+
+   --radius-small: 8px;
+   --radius-medium: 12px;
+   --radius-large: 16px;
+   --radius-xlarge: 24px;
+   --radius-full: 999px;
+
+   /* ==========================================================================
+     SHADOWS
+     Figma drop shadow: offsetX offsetY blur spread color
+     ========================================================================== */
+
+   --shadow-soft: 0 4px 16px 0 #17212f0f;
+   --shadow-card: 0 2px 8px 0 #17212f0d;
+}
