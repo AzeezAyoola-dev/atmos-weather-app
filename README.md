@@ -4,19 +4,18 @@
 
 Atmos is a responsive weather web application built with HTML5, CSS3 and
 vanilla JavaScript. It uses the Open-Meteo Geocoding API for city search and
-the Open-Meteo Forecast API for current conditions.
+the Open-Meteo Forecast API for current conditions and the five-day forecast.
 
 ## Status
 
-**Phase 6 — current weather integration.** Selecting a city in Search Locations
-now returns to the Weather Dashboard and fetches current conditions from the
-Open-Meteo Forecast API using the selected city's latitude, longitude and
-timezone. The dashboard city, country, local date/time, temperature, condition
-icon and description, feels-like temperature, humidity, wind speed and available
-visibility are updated in place, with loading and error feedback.
+**Phase 7 — five-day forecast integration.** Selecting a city in Search
+Locations returns to the Weather Dashboard and fetches both current conditions
+and the five-day forecast from the Open-Meteo Forecast API using the selected
+city's latitude, longitude and timezone. The dashboard city, country, local
+date/time, current readings and the five existing forecast rows all update in
+place, with loading and error feedback.
 
-The five-day forecast remains a static sample. Recent-search persistence and
-deployment are reserved for later phases.
+Recent-search persistence and deployment are reserved for later phases.
 
 ## Stack
 
@@ -24,7 +23,7 @@ deployment are reserved for later phases.
 - CSS3
 - Vanilla JavaScript (ES modules)
 - Open-Meteo Geocoding API
-- Open-Meteo Forecast API for current conditions
+- Open-Meteo Forecast API for current conditions and five-day forecast
 - Browser `fetch` and `AbortController`
 
 No frameworks, no backend and no package dependencies. `localStorage` is
@@ -40,7 +39,7 @@ ATMOS/
 │   └── style.css          Shell and screen styles
 ├── js/
 │   ├── app.js             Entry point, view switching and orchestration
-│   ├── api.js             Open-Meteo geocoding and current-weather requests
+│   ├── api.js             Open-Meteo geocoding, current and daily requests
 │   ├── weather.js         Weather codes, formatting and dashboard rendering
 │   ├── search.js          Validation, debounce, rendering and selection
 │   ├── state.js           Shared in-memory selected-city state
@@ -94,8 +93,21 @@ of truth. The **warm palette** from those screenshots is authoritative.
 - Visibility is converted from metres to kilometres when the API reports metres.
 - Loading and API/network errors are shown in the existing dashboard components
   and announced through the existing live region.
-- The five-day forecast is not API-driven yet; its rows remain the approved
-  static sample.
+
+## Phase 7 five-day forecast behaviour
+
+- A separate daily request asks for `weather_code`, `temperature_2m_max` and
+  `temperature_2m_min`, with `forecast_days=5` and the selected city's
+  coordinates and timezone.
+- The five existing forecast rows are reused: weekday labels come from the
+  API's local dates, WMO codes drive the existing icon and condition text, and
+  high/low temperatures are rendered in Celsius.
+- The first row is the selected city's local today, followed by the next four
+  days. Weekday labels are derived without applying the browser's timezone.
+- Missing or incomplete daily entries become `—` placeholders while the
+  five-row structure is preserved.
+- Forecast loading and errors use the existing rows and are announced through
+  the live region without preventing the current weather from rendering.
 
 ## Accessibility note
 

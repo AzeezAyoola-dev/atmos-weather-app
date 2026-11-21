@@ -3,7 +3,8 @@
  *
  * Phase 1: forecast configuration.
  * Phase 6: WMO code mapping, local-time formatting and current-weather
- * dashboard rendering. Daily forecast rendering remains reserved for Phase 7.
+ * dashboard rendering.
+ * Phase 7: daily forecast rendering in the existing five rows.
  */
 
 export const FORECAST_DAYS = 5;
@@ -51,6 +52,11 @@ const LOCAL_DATE_FORMAT = new Intl.DateTimeFormat('en-GB', {
   hourCycle: 'h23',
 });
 
+const FORECAST_WEEKDAY_FORMAT = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'UTC',
+  weekday: 'long',
+});
+
 /**
  * Map a WMO weather code to a description and an existing sprite icon.
  *
@@ -58,7 +64,16 @@ const LOCAL_DATE_FORMAT = new Intl.DateTimeFormat('en-GB', {
  * @returns {{description: string, icon: string}} Presentation data.
  */
 export function getWeatherCondition(code) {
-  return WEATHER_CONDITIONS.get(Number(code)) || UNKNOWN_CONDITION;
+  if (code === null || code === undefined || code === '') {
+    return UNKNOWN_CONDITION;
+  }
+
+  const normalized = Number(code);
+  if (!Number.isFinite(normalized)) {
+    return UNKNOWN_CONDITION;
+  }
+
+  return WEATHER_CONDITIONS.get(normalized) || UNKNOWN_CONDITION;
 }
 
 /**
@@ -81,6 +96,33 @@ export function formatLocalDateTime(time) {
   );
 
   return `${parts.weekday}, ${parts.day} ${parts.month} · ${parts.hour}:${parts.minute}`;
+}
+
+/**
+ * Derive a weekday label from an API local date string without applying the
+ * browser's timezone.
+ *
+ * @param {string} date Example: "2026-11-21".
+ * @returns {string} Example: "Saturday", or an empty string when invalid.
+ */
+export function formatForecastWeekday(date) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date || ''));
+  if (!match) {
+    return '';
+  }
+
+  const [, year, month, day] = match.map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    parsed.getUTCFullYear() !== year
+    || parsed.getUTCMonth() !== month - 1
+    || parsed.getUTCDate() !== day
+  ) {
+    return '';
+  }
+
+  return FORECAST_WEEKDAY_FORMAT.format(parsed);
 }
 
 /**
@@ -169,6 +211,119 @@ export function showWeatherError(city) {
     wind: '—',
     feelsLike: '—',
   });
+}
+
+/**
+ * Show loading placeholders in the existing five forecast rows.
+ */
+export function showForecastLoading() {
+  const { list, rows } = getForecastElements();
+  list.setAttribute('aria-busy', 'true');
+  list.dataset.state = 'loading';
+  rows.forEach((row) => writeForecastRow(row, null, 'loading'));
+}
+
+/**
+ * Render normalized daily forecast entries into the existing five rows.
+ * Missing entries or fields become graceful placeholders.
+ *
+ * @param {object[]} forecastDays Normalized daily forecast from the API layer.
+ */
+export function renderDailyForecast(forecastDays) {
+  const { list, rows } = getForecastElements();
+  const days = Array.isArray(forecastDays) ? forecastDays.slice(0, FORECAST_DAYS) : [];
+
+  list.removeAttribute('aria-busy');
+  list.dataset.state = '';
+  rows.forEach((row, index) => writeForecastRow(row, days[index] || null, 'ready'));
+}
+
+/**
+ * Show a clear forecast error while preserving the five-row structure.
+ */
+export function showForecastError() {
+  const { list, rows } = getForecastElements();
+  list.removeAttribute('aria-busy');
+  list.dataset.state = 'error';
+  rows.forEach((row) => writeForecastRow(row, null, 'error'));
+}
+
+function getForecastElements() {
+  const list = document.querySelector('#dashboard-view .forecast-list');
+  const rows = Array.from(list.querySelectorAll('.forecast-row'));
+  const template = rows[0];
+
+  while (rows.length < FORECAST_DAYS) {
+    const row = template ? template.cloneNode(true) : createForecastRow();
+    list.append(row);
+    rows.push(row);
+  }
+
+  rows.slice(FORECAST_DAYS).forEach((row) => row.remove());
+  return { list, rows: rows.slice(0, FORECAST_DAYS) };
+}
+
+function createForecastRow() {
+  const row = document.createElement('li');
+  row.className = 'forecast-row';
+  row.innerHTML = `
+    <p class="forecast-row__day"><time></time></p>
+    <span class="forecast-row__condition">
+      <svg class="icon" aria-hidden="true" focusable="false" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <use href="#icon-cloud"></use>
+      </svg>
+      <span class="sr-only">Forecast unavailable</span>
+    </span>
+    <p class="forecast-temp">
+      <span class="forecast-temp__label" aria-hidden="true">H</span>
+      <span class="sr-only">High</span>
+      <span>—</span>
+    </p>
+    <p class="forecast-temp">
+      <span class="forecast-temp__label" aria-hidden="true">L</span>
+      <span class="sr-only">Low</span>
+      <span>—</span>
+    </p>
+  `;
+  return row;
+}
+
+function writeForecastRow(row, day, state) {
+  const time = row.querySelector('.forecast-row__day time');
+  const iconUse = row.querySelector('.forecast-row__condition use');
+  const conditionLabel = row.querySelector('.forecast-row__condition .sr-only');
+  const temperatureValues = Array.from(row.querySelectorAll('.forecast-temp'))
+    .map((element) => element.lastElementChild);
+  const [highValue, lowValue] = temperatureValues;
+
+  if (state === 'loading') {
+    time.removeAttribute('datetime');
+    time.textContent = '…';
+    iconUse.setAttribute('href', '#icon-cloud');
+    conditionLabel.textContent = 'Loading forecast';
+    if (highValue) highValue.textContent = '…';
+    if (lowValue) lowValue.textContent = '…';
+    return;
+  }
+
+  if (state === 'error' || !day?.date) {
+    time.removeAttribute('datetime');
+    time.textContent = '—';
+    iconUse.setAttribute('href', '#icon-cloud');
+    conditionLabel.textContent = 'Forecast unavailable';
+    if (highValue) highValue.textContent = '—';
+    if (lowValue) lowValue.textContent = '—';
+    return;
+  }
+
+  const weekday = formatForecastWeekday(day.date);
+  const condition = getWeatherCondition(day.weatherCode);
+  time.dateTime = day.date;
+  time.textContent = weekday || day.date;
+  iconUse.setAttribute('href', `#${condition.icon}`);
+  conditionLabel.textContent = condition.description;
+  if (highValue) highValue.textContent = formatDegrees(day.high);
+  if (lowValue) lowValue.textContent = formatDegrees(day.low);
 }
 
 function getDashboardElements() {

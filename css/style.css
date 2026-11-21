@@ -484,6 +484,11 @@ a {
   line-height: var(--line-height-body-default);
 }
 
+.forecast-list[data-state="loading"] .forecast-row__day,
+.forecast-list[data-state="error"] .forecast-row__day {
+  color: var(--app-text-secondary);
+}
+
 .forecast-row__condition {
   display: flex;
   align-self: stretch;

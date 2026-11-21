@@ -3,7 +3,7 @@
  *
  * Phase 5: geocoding requests for city search.
  * Phase 6: current-weather requests for the selected city.
- * Daily forecast requests remain reserved for a later phase.
+ * Phase 7: daily forecast requests for the selected city.
  */
 
 export const API_ENDPOINTS = Object.freeze({
@@ -21,6 +21,14 @@ export const CURRENT_WEATHER_VARIABLES = Object.freeze([
   'wind_speed_10m',
   'visibility',
 ]);
+
+export const DAILY_FORECAST_VARIABLES = Object.freeze([
+  'weather_code',
+  'temperature_2m_max',
+  'temperature_2m_min',
+]);
+
+export const DAILY_FORECAST_DAYS = 5;
 
 /**
  * Fetch cities matching a query from the Open-Meteo Geocoding API.
@@ -97,16 +105,10 @@ export async function fetchCurrentWeather(city, { signal } = {}) {
     throw new Error('Selected city has no coordinates');
   }
 
-  const url = new URL(API_ENDPOINTS.forecast);
-  url.searchParams.set('latitude', String(latitude));
-  url.searchParams.set('longitude', String(longitude));
+  const url = createForecastUrl(latitude, longitude, city.timezone);
   url.searchParams.set('current', CURRENT_WEATHER_VARIABLES.join(','));
   url.searchParams.set('temperature_unit', 'celsius');
   url.searchParams.set('wind_speed_unit', 'kmh');
-
-  if (getTrimmedString(city.timezone)) {
-    url.searchParams.set('timezone', city.timezone.trim());
-  }
 
   const response = await fetch(url, {
     signal,
@@ -144,6 +146,63 @@ function normalizeCurrentWeather(payload) {
       ? payload.current_units
       : {},
   };
+}
+
+/**
+ * Fetch five daily forecast entries for a geocoded city.
+ *
+ * @param {object} city City from shared state with latitude, longitude and timezone.
+ * @param {{signal?: AbortSignal}} [options] Optional abort signal.
+ * @returns {Promise<object[]>} Up to five normalized daily forecast entries.
+ */
+export async function fetchDailyForecast(city, { signal } = {}) {
+  const latitude = Number(city?.latitude);
+  const longitude = Number(city?.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new Error('Selected city has no coordinates');
+  }
+
+  const url = createForecastUrl(latitude, longitude, city.timezone);
+  url.searchParams.set('daily', DAILY_FORECAST_VARIABLES.join(','));
+  url.searchParams.set('forecast_days', String(DAILY_FORECAST_DAYS));
+  url.searchParams.set('temperature_unit', 'celsius');
+
+  const response = await fetch(url, {
+    signal,
+    headers: { Accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Forecast API returned ${response.status}`);
+  }
+
+  const payload = await response.json();
+  return normalizeDailyForecast(payload);
+}
+
+function createForecastUrl(latitude, longitude, timezone) {
+  const url = new URL(API_ENDPOINTS.forecast);
+  url.searchParams.set('latitude', String(latitude));
+  url.searchParams.set('longitude', String(longitude));
+
+  if (getTrimmedString(timezone)) {
+    url.searchParams.set('timezone', getTrimmedString(timezone));
+  }
+
+  return url;
+}
+
+function normalizeDailyForecast(payload) {
+  const daily = payload?.daily;
+  const times = Array.isArray(daily?.time) ? daily.time : [];
+
+  return times.slice(0, DAILY_FORECAST_DAYS).map((time, index) => ({
+    date: getTrimmedString(time),
+    weatherCode: toFiniteNumber(daily.weather_code?.[index]),
+    high: toFiniteNumber(daily.temperature_2m_max?.[index]),
+    low: toFiniteNumber(daily.temperature_2m_min?.[index]),
+  }));
 }
 
 function toFiniteNumber(value) {

@@ -3,11 +3,19 @@
  *
  * Phase 5: view switching and city search.
  * Phase 6: load and render current weather for the selected city.
+ * Phase 7: load and render the five-day forecast for the selected city.
  * Recent search persistence remains reserved for a later phase.
  */
 
-import { fetchCurrentWeather } from './api.js';
-import { renderCurrentWeather, showWeatherError, showWeatherLoading } from './weather.js';
+import { fetchCurrentWeather, fetchDailyForecast } from './api.js';
+import {
+  renderCurrentWeather,
+  renderDailyForecast,
+  showForecastError,
+  showForecastLoading,
+  showWeatherError,
+  showWeatherLoading,
+} from './weather.js';
 import './storage.js';
 import { createCitySearchController } from './search.js';
 
@@ -60,10 +68,10 @@ function openDashboardView() {
 
 function handleCitySelection(city) {
   openDashboardView();
-  loadCurrentWeather(city);
+  loadWeather(city);
 }
 
-async function loadCurrentWeather(city) {
+async function loadWeather(city) {
   if (weatherController) {
     weatherController.abort();
   }
@@ -74,36 +82,53 @@ async function loadCurrentWeather(city) {
   const cityLabel = [city?.name, city?.country].filter(Boolean).join(', ');
 
   showWeatherLoading(city);
-  announce(`Loading current weather for ${cityLabel}.`);
+  showForecastLoading();
+  announce(`Loading current weather and five-day forecast for ${cityLabel}.`);
 
-  try {
-    const weather = await fetchCurrentWeather(city, { signal: controller.signal });
+  const [currentResult, forecastResult] = await Promise.allSettled([
+    fetchCurrentWeather(city, { signal: controller.signal }),
+    fetchDailyForecast(city, { signal: controller.signal }),
+  ]);
 
-    if (controller.signal.aborted || requestId !== weatherRequestId) {
-      return;
-    }
+  if (controller.signal.aborted || requestId !== weatherRequestId) {
+    return;
+  }
 
-    renderCurrentWeather(city, weather);
-    announce(`Current weather loaded for ${cityLabel}.`);
-  } catch (error) {
-    if (controller.signal.aborted || requestId !== weatherRequestId) {
-      return;
-    }
+  const currentOk = currentResult.status === 'fulfilled';
+  const forecastOk = forecastResult.status === 'fulfilled';
 
+  if (currentOk) {
+    renderCurrentWeather(city, currentResult.value);
+  } else {
     showWeatherError(city);
+  }
+
+  if (forecastOk) {
+    renderDailyForecast(forecastResult.value);
+  } else {
+    showForecastError();
+  }
+
+  if (currentOk && forecastOk) {
+    announce(`Current weather and five-day forecast loaded for ${cityLabel}.`);
+  } else if (currentOk) {
+    announce(`Current weather loaded for ${cityLabel}. Five-day forecast unavailable.`);
+  } else if (forecastOk) {
+    announce(`Five-day forecast loaded for ${cityLabel}. Current weather unavailable.`);
+  } else {
     announce(`Weather data could not be loaded for ${cityLabel}. Please try again.`);
-  } finally {
-    if (weatherController === controller) {
-      weatherController = null;
-    }
+  }
+
+  if (weatherController === controller) {
+    weatherController = null;
   }
 }
 
 function announce(message) {
   appStatus.textContent = '';
-  requestAnimationFrame(() => {
+  setTimeout(() => {
     appStatus.textContent = message;
-  });
+  }, 0);
 }
 
 dashboardInput.addEventListener('focus', () => {
