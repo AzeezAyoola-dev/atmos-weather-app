@@ -8,9 +8,10 @@ the Open-Meteo Forecast API for current conditions and a five-day forecast.
 
 ## Status
 
-**Phase 1 — project setup.** The application shell and module structure are in
-place. Weather UI, API integration, recent-search persistence, accessibility
-hardening and deployment are not implemented yet.
+**Phase 2 — static screens.** The Weather Dashboard and Search Locations
+screens are built with semantic HTML and static Lagos sample data. City search
+is not wired up yet: API integration, JavaScript behaviour, recent-search
+persistence, accessibility hardening and deployment are still to come.
 
 ## Stack
 
@@ -29,7 +30,7 @@ ATMOS/
 ├── index.html
 ├── css/
 │   ├── variables.css      Existing design tokens
-│   └── style.css          Base shell styles
+│   └── style.css          Shell and screen styles
 ├── js/
 │   ├── app.js             Entry point and module boot
 │   ├── api.js             Open-Meteo endpoint constants
