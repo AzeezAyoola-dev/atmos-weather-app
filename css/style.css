@@ -209,7 +209,7 @@ a {
   display: flex;
   align-items: center;
   gap: var(--space-12);
-  min-height: 48px;
+  min-height: 52px;
   padding-inline: var(--space-16);
   background: var(--app-surface);
   border: 1px solid var(--app-border);
@@ -257,6 +257,7 @@ a {
 }
 
 .search-clear {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -270,6 +271,14 @@ a {
   cursor: pointer;
 }
 
+/* Expand the clear button's hit area to 44px without enlarging the visual. */
+.search-clear::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: inherit;
+}
+
 .search-clear .icon {
   width: 16px;
   height: 16px;
@@ -280,6 +289,7 @@ a {
 .current-weather {
   margin-top: var(--space-24);
   padding: var(--space-24);
+  padding-bottom: var(--space-32);
   background: var(--color-warm-charcoal);
   border-radius: var(--radius-xlarge);
   color: var(--app-surface);
@@ -291,6 +301,10 @@ a {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-16);
+}
+
+.current-weather__location {
+  min-width: 0;
 }
 
 .eyebrow {
@@ -309,6 +323,7 @@ a {
   font-size: var(--font-size-heading-h2);
   font-weight: 500;
   line-height: var(--line-height-heading-h2);
+  overflow-wrap: anywhere;
 }
 
 .current-weather__date {
@@ -319,9 +334,9 @@ a {
 }
 
 .weather-icon--hero {
-  width: 32px;
-  height: 32px;
-  margin-top: var(--space-4);
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
   color: var(--app-accent);
 }
 
@@ -372,7 +387,7 @@ a {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-12);
-  margin: var(--space-16) 0 0;
+  margin: var(--space-24) 0 0;
 }
 
 .metric-card {
@@ -381,7 +396,7 @@ a {
   grid-template-areas:
     "label icon"
     "value value";
-  gap: var(--space-4) var(--space-8);
+  gap: var(--space-4);
   align-items: start;
   padding: var(--space-16);
   background: var(--app-surface);
@@ -396,7 +411,7 @@ a {
   color: var(--app-text-secondary);
   font-size: 11px;
   font-weight: 500;
-  line-height: 16px;
+  line-height: var(--line-height-body-small);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -444,7 +459,8 @@ a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto auto;
   align-items: center;
-  padding: 14px var(--space-16);
+  padding-block: var(--space-16);
+  padding-inline: var(--space-16);
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   border-radius: var(--radius-medium);
@@ -499,7 +515,7 @@ a {
 
 .search-header {
   gap: var(--space-12);
-  margin-bottom: var(--space-24);
+  margin-bottom: var(--space-12);
 }
 
 .icon-button {
@@ -535,15 +551,27 @@ a {
 }
 
 .search-hint {
-  margin: var(--space-12) 0 0;
+  margin: var(--space-16) 0 0;
   color: var(--app-text-secondary);
-  font-size: var(--font-size-body-small);
-  line-height: var(--line-height-body-small);
+  font-size: var(--font-size-body-default);
+  line-height: var(--line-height-body-default);
 }
 
-.recent-searches,
-.search-results {
+/*
+ * The approved results screen omits the hint. Hiding it from CSS keeps the
+ * static preview faithful and lets the future search script drive the state
+ * through the existing `hidden` attribute.
+ */
+#search-view:has(#search-results:not([hidden])) .search-hint {
+  display: none;
+}
+
+.recent-searches {
   margin-top: var(--space-24);
+}
+
+.search-results {
+  margin-top: var(--space-20);
 }
 
 .chip-list {
@@ -574,7 +602,7 @@ a {
 .result-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
+  gap: var(--space-8);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -585,7 +613,8 @@ a {
   align-items: center;
   gap: var(--space-12);
   width: 100%;
-  padding: 14px var(--space-16);
+  padding-block: var(--space-12);
+  padding-inline: var(--space-16);
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   border-radius: var(--radius-large);
@@ -617,12 +646,14 @@ a {
   font-size: var(--font-size-body-default);
   font-weight: 600;
   line-height: var(--line-height-body-default);
+  overflow-wrap: anywhere;
 }
 
 .result-row__country {
   color: var(--app-text-secondary);
   font-size: var(--font-size-body-small);
   line-height: var(--line-height-body-small);
+  overflow-wrap: anywhere;
 }
 
 .result-row__chevron {

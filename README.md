@@ -8,10 +8,10 @@ the Open-Meteo Forecast API for current conditions and a five-day forecast.
 
 ## Status
 
-**Phase 2 — static screens.** The Weather Dashboard and Search Locations
-screens are built with semantic HTML and static Lagos sample data. City search
-is not wired up yet: API integration, JavaScript behaviour, recent-search
-persistence, accessibility hardening and deployment are still to come.
+**Phase 3 — responsive styling.** The Weather Dashboard and Search Locations
+screens are styled and verified at 320px, 375px, 390px and 1440px. City search
+is still not wired up: API integration, JavaScript behaviour, recent-search
+persistence and deployment are reserved for later phases.
 
 ## Stack
 
@@ -68,9 +68,9 @@ of truth. The **warm palette** from those screenshots is authoritative.
 
 The approved warm secondary text colour `#85847D` measures 3.72:1 on the
 `#FFFEFA` surface. For normal-size text, `--app-text-secondary` uses `#6D6C64`
-instead, which measures 5.23:1 on `#FFFEFA` and 4.64:1 on `#F3F0E9`. This is
-the only colour changed in Phase 1. Further accessibility adjustments will be
-reported as they are introduced.
+instead, which measures 5.23:1 on `#FFFEFA` and 4.64:1 on `#F3F0E9`. Phase 2
+added `--app-accent-strong: #A97A2F` for forecast icons on light surfaces
+(3.78:1 on `#FFFEFA`). No other approved colours have changed.
 
 ## Local development
 
