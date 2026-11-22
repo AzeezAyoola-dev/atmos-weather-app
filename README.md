@@ -8,11 +8,14 @@ the Open-Meteo Forecast API for current conditions and the five-day forecast.
 
 ## Status
 
-**Phase 8 — recent searches and LocalStorage.** Selecting a city from search
-results or recent history now saves it to a persistent, ordered recent-search
-list. The Search Locations chips are rendered from that list instead of static
-placeholders, and selecting a chip returns directly to that city's weather
-dashboard. Deployment remains reserved for a later phase.
+**Phase 9 — loading, empty, invalid and error states.** HOME always keeps
+Lagos, Nigeria and now has loading, friendly failure and retry states. Search
+handles empty input, one-character input, loading, no results, API/network
+failure with retry and an empty recent-search list. SELECTED WEATHER keeps its
+chosen city during loading, failure and retry, and shows a forecast-specific
+fallback when only the forecast request fails. The three-screen navigation,
+independent HOME/SELECTED state, recent searches and approved design are
+preserved. Deployment remains reserved for a later phase.
 
 ## Stack
 
@@ -39,7 +42,7 @@ ATMOS/
 │   ├── api.js             Open-Meteo geocoding, current and daily requests
 │   ├── weather.js         Weather codes, formatting and dashboard rendering
 │   ├── search.js          Validation, debounce, rendering and selection
-│   ├── state.js           Shared in-memory selected-city state
+│   ├── state.js           Independent HOME/SELECTED state and error slices
 │   └── storage.js         Recent-search persistence and validation
 ├── assets/
 ├── design/                Existing tokens and screenshots
@@ -121,6 +124,51 @@ of truth. The **warm palette** from those screenshots is authoritative.
   without errors; a valid in-memory list is retained for the current session.
 - The hardcoded Lagos, Abuja and Ibadan chips are no longer part of the app
   markup.
+
+## Phase 9 state behaviour
+
+- HOME uses a fixed Lagos location. Loading, current-weather failure,
+  forecast-only failure and retry can never replace it with a searched city.
+- Search uses the existing hint element for its prompt, two-character hint,
+  searching feedback, no-results message and network/API error. Failed searches
+  expose a retry action; successful searches hide it.
+- An empty recent-search list shows a helpful message instead of fake sample
+  cities. Existing recent chips, ordering and persistence are unchanged.
+- SELECTED WEATHER renders from its own city/weather slice. Current weather and
+  forecast failures are tracked separately, so a forecast-only failure keeps
+  valid current weather visible and offers a forecast-only retry.
+- Weather retries reload the active screen's own state. Forecast retries fetch
+  only the daily forecast, preserving current weather and the selected city.
+- Retry buttons reuse existing warm-palette surfaces and tokens, have 44px
+  minimum hit targets, and keep the global visible focus style.
+- Stale responses are guarded so a result for a previous city cannot overwrite
+  the current selection.
+- Navigation remains `HOME → SEARCH → SELECTED WEATHER` forwards and
+  `SELECTED WEATHER → SEARCH → HOME` backwards. Search query, results and
+  selected-row state are restored when returning from SELECTED WEATHER.
+
+### Verification
+
+- Phase 9 browser suite: **294/294 checks passed** at 320px, 375px, 390px and
+  1440px, covering slow networks, failed geocoding, invalid/no-result
+  searches, HOME current and forecast failures, selected-city current and
+  forecast failures, all retry paths, empty recents, refresh, navigation, and
+  per-day forecast icons on both weather screens.
+- Regressions: Phase 5 **45/45**, Phase 6 **56/56**, Phase 7 **58/58**,
+  Phase 8 **37/37**, state separation **164/164**, forecast icons **129/129**.
+- JavaScript module syntax checks and `git diff --check` pass.
+
+### Remaining limitations
+
+- Weather and recent-search data are still in-memory or LocalStorage only;
+  there is no offline cache or service worker, so a refresh requires a working
+  connection to repopulate weather.
+- Error and loading states are intentionally session-local and are not
+  persisted across refresh. A refresh returns to HOME with Lagos.
+- Open-Meteo rate limits and upstream outages remain outside the app's control;
+  the app reports them and offers retry rather than caching stale forecasts.
+- City search still requires at least two characters and relies on the
+  geocoding provider's available names and spelling.
 
 ## Accessibility note
 

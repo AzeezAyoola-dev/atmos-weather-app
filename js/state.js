@@ -4,6 +4,9 @@
  * HOME weather and SELECTED WEATHER are deliberately separate slices:
  * searching for a city can only ever write selectedCity / selectedCityWeather.
  * The Lagos home location and its weather are never overwritten by a search.
+ *
+ * Phase 9: current and forecast failures are tracked separately so a forecast
+ * retry can update only its own slice while valid current weather is retained.
  */
 
 export const SCREENS = Object.freeze({
@@ -52,6 +55,17 @@ export function setHomeWeather(weather) {
 }
 
 /**
+ * Update part of the home weather slice without clearing valid sibling data.
+ *
+ * @param {object} partial Fields to merge into the existing home weather.
+ * @returns {object|null} A copy of the merged home weather.
+ */
+export function updateHomeWeather(partial) {
+  state.homeWeather = mergeWeather(state.homeWeather, partial);
+  return getHomeWeather();
+}
+
+/**
  * Store the city selected from search results.
  *
  * @param {object} city Normalized geocoding result.
@@ -96,6 +110,18 @@ export function setSelectedCityWeather(weather) {
   return getSelectedCityWeather();
 }
 
+/**
+ * Update part of the selected-city weather slice without clearing valid
+ * sibling data or changing the selected city.
+ *
+ * @param {object} partial Fields to merge into the existing weather.
+ * @returns {object|null} A copy of the merged selected-city weather.
+ */
+export function updateSelectedCityWeather(partial) {
+  state.selectedCityWeather = mergeWeather(state.selectedCityWeather, partial);
+  return getSelectedCityWeather();
+}
+
 /** @returns {string} The active screen: home, search or selected-weather. */
 export function getActiveScreen() {
   return state.activeScreen;
@@ -114,10 +140,27 @@ export function setActiveScreen(screen) {
   return state.activeScreen;
 }
 
+function mergeWeather(existing, partial) {
+  return normalizeWeather({
+    current: existing?.current ?? null,
+    forecast: existing?.forecast ?? null,
+    currentError: existing?.currentError ?? false,
+    forecastError: existing?.forecastError ?? false,
+    ...partial,
+  });
+}
+
 function normalizeWeather(weather) {
   if (!weather || typeof weather !== 'object') {
     return null;
   }
+
+  const currentError = Boolean(
+    weather.currentError ?? (weather.error && !weather.current),
+  );
+  const forecastError = Boolean(
+    weather.forecastError ?? (weather.error && !weather.forecast),
+  );
 
   return {
     current: weather.current && typeof weather.current === 'object'
@@ -126,7 +169,9 @@ function normalizeWeather(weather) {
     forecast: Array.isArray(weather.forecast)
       ? weather.forecast.map((day) => ({ ...day }))
       : null,
-    error: Boolean(weather.error),
+    currentError,
+    forecastError,
+    error: Boolean(weather.error || currentError || forecastError),
   };
 }
 
@@ -142,6 +187,8 @@ function copyWeather(weather) {
     forecast: Array.isArray(weather.forecast)
       ? weather.forecast.map((day) => ({ ...day }))
       : null,
+    currentError: weather.currentError,
+    forecastError: weather.forecastError,
     error: weather.error,
   };
 }

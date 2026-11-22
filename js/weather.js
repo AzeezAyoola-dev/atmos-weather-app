@@ -7,6 +7,8 @@
  * Phase 7: daily forecast rendering in the existing five rows.
  * Forecast icon fix: each WMO code has a distinct condition icon, and both the
  * icon and description are derived from the same per-day code.
+ * Phase 9: loading, empty and error states reuse the existing card and rows,
+ * with accessible retry actions where a request can be repeated.
  */
 
 export const FORECAST_DAYS = 5;
@@ -136,6 +138,10 @@ export function showWeatherLoading(city) {
   const elements = getDashboardElements();
   setCityHeading(elements, city);
 
+  if (elements.retryButton) {
+    elements.retryButton.hidden = true;
+  }
+
   elements.card.setAttribute('aria-busy', 'true');
   elements.eyebrow.textContent = 'Loading weather';
   elements.time.textContent = 'Loading local time…';
@@ -168,6 +174,10 @@ export function renderCurrentWeather(city, weather) {
 
   setCityHeading(elements, city);
 
+  if (elements.retryButton) {
+    elements.retryButton.hidden = true;
+  }
+
   elements.card.removeAttribute('aria-busy');
   elements.eyebrow.textContent = 'Current weather';
   elements.time.textContent = formatLocalDateTime(weather?.time);
@@ -191,9 +201,15 @@ export function renderCurrentWeather(city, weather) {
 /**
  * Show a clear in-place error while keeping the selected city visible.
  *
- * @param {object} city Selected city from shared state.
+ * @param {object} city City whose weather failed to load.
+ * @param {string} [message] Friendly primary error message.
+ * @param {string} [detail] Short secondary instruction.
  */
-export function showWeatherError(city) {
+export function showWeatherError(
+  city,
+  message = 'Weather data unavailable',
+  detail = 'Try again in a moment.',
+) {
   const elements = getDashboardElements();
   setCityHeading(elements, city);
 
@@ -203,16 +219,20 @@ export function showWeatherError(city) {
   elements.time.removeAttribute('datetime');
   elements.heroIconUse.setAttribute('href', '#icon-cloud');
   elements.temperatureValue.textContent = '—';
-  elements.temperatureScreenReader.textContent = 'Weather data unavailable';
-  elements.summary.textContent = 'Weather data unavailable';
+  elements.temperatureScreenReader.textContent = message;
+  elements.summary.textContent = message;
   elements.summary.dataset.state = 'error';
-  elements.feels.textContent = 'Try selecting the city again';
+  elements.feels.textContent = detail;
   setMetrics(elements, {
     humidity: '—',
     visibility: '—',
     wind: '—',
     feelsLike: '—',
   });
+
+  if (elements.retryButton) {
+    elements.retryButton.hidden = false;
+  }
 }
 
 /**
@@ -220,6 +240,7 @@ export function showWeatherError(city) {
  */
 export function showForecastLoading() {
   const { list, rows } = getForecastElements();
+  setForecastState(false);
   list.setAttribute('aria-busy', 'true');
   list.dataset.state = 'loading';
   rows.forEach((row) => writeForecastRow(row, null, 'loading'));
@@ -235,6 +256,7 @@ export function renderDailyForecast(forecastDays) {
   const { list, rows } = getForecastElements();
   const days = Array.isArray(forecastDays) ? forecastDays.slice(0, FORECAST_DAYS) : [];
 
+  setForecastState(false);
   list.removeAttribute('aria-busy');
   list.dataset.state = '';
   rows.forEach((row, index) => writeForecastRow(row, days[index] || null, 'ready'));
@@ -243,11 +265,30 @@ export function renderDailyForecast(forecastDays) {
 /**
  * Show a clear forecast error while preserving the five-row structure.
  */
-export function showForecastError() {
+export function showForecastError(
+  message = 'Five-day forecast unavailable',
+) {
   const { list, rows } = getForecastElements();
+  setForecastState(true, message);
   list.removeAttribute('aria-busy');
   list.dataset.state = 'error';
   rows.forEach((row) => writeForecastRow(row, null, 'error'));
+}
+
+function setForecastState(isVisible, message = '') {
+  const panel = document.getElementById('forecast-state');
+  const text = document.getElementById('forecast-message');
+  const retry = document.getElementById('forecast-retry-button');
+
+  if (panel) {
+    panel.hidden = !isVisible;
+  }
+  if (text && isVisible) {
+    text.textContent = message;
+  }
+  if (retry) {
+    retry.hidden = !isVisible;
+  }
 }
 
 function getForecastElements() {
@@ -339,6 +380,7 @@ function getDashboardElements() {
 
   return {
     card,
+    retryButton: document.getElementById('weather-retry-button'),
     eyebrow: card.querySelector('.eyebrow'),
     city: document.getElementById('current-city'),
     title: document.getElementById('dashboard-title'),

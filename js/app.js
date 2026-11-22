@@ -7,6 +7,8 @@
  * Phase 8: recent-search chips are rendered and reused for direct selection.
  * State fix: home weather (Lagos) and searched-city weather are independent
  * state slices. Each screen renders only from its own slice.
+ * Phase 9: loading, empty, error and not-found states with retry actions that
+ * never overwrite the Lagos home state or the selected city.
  */
 
 import { fetchCurrentWeather, fetchDailyForecast } from './api.js';
@@ -25,10 +27,12 @@ import {
   getHomeLocation,
   getHomeWeather,
   setHomeWeather,
+  updateHomeWeather,
   getSelectedCity,
   setSelectedCity,
   getSelectedCityWeather,
   setSelectedCityWeather,
+  updateSelectedCityWeather,
   getActiveScreen,
   setActiveScreen,
 } from './state.js';
@@ -43,6 +47,10 @@ const citySearch = document.getElementById('city-search');
 const clearButton = searchView.querySelector('.search-clear');
 const searchHint = document.getElementById('search-hint');
 const recentList = document.getElementById('recent-list');
+const recentEmpty = document.getElementById('recent-empty');
+const searchRetryButton = document.getElementById('search-retry-button');
+const weatherRetryButton = document.getElementById('weather-retry-button');
+const forecastRetryButton = document.getElementById('forecast-retry-button');
 const searchResults = document.getElementById('search-results');
 const resultList = searchResults.querySelector('.result-list');
 const appStatus = document.getElementById('app-status');
@@ -55,6 +63,8 @@ const searchController = createCitySearchController({
   results: searchResults,
   list: resultList,
   recentList,
+  recentEmpty,
+  retryButton: searchRetryButton,
   status: appStatus,
   onCitySelected: handleCitySelection,
 });
@@ -62,7 +72,9 @@ const searchController = createCitySearchController({
 let switchingView = false;
 let homeRequestController = null;
 let selectedRequestController = null;
+let forecastRequestController = null;
 let selectedRequestId = 0;
+let forecastRequestId = 0;
 let capturedSearchState = null;
 
 /**
@@ -110,13 +122,17 @@ function renderHomeWeather() {
   if (weather.current) {
     renderCurrentWeather(location, weather.current);
   } else {
-    showWeatherError(location);
+    showWeatherError(
+      location,
+      'We couldn’t load Lagos weather.',
+      'Your home location is still Lagos. Try again.',
+    );
   }
 
   if (weather.forecast) {
     renderDailyForecast(weather.forecast);
   } else {
-    showForecastError();
+    showForecastError('We couldn’t load the Lagos five-day forecast.');
   }
 }
 
@@ -125,25 +141,35 @@ function renderSelectedWeather() {
   const city = getSelectedCity();
 
   if (!weather || !city) {
-    showWeatherLoading(city || getHomeLocation());
+    showWeatherLoading(city || { name: 'Selected city', country: '' });
     showForecastLoading();
     return;
   }
 
+  const label = [city.name, city.country].filter(Boolean).join(', ');
+
   if (weather.current) {
     renderCurrentWeather(city, weather.current);
   } else {
-    showWeatherError(city);
+    showWeatherError(
+      city,
+      `We couldn’t load weather for ${label}.`,
+      `${city.name} is still selected. Try again.`,
+    );
   }
 
   if (weather.forecast) {
     renderDailyForecast(weather.forecast);
   } else {
-    showForecastError();
+    showForecastError(`We couldn’t load the five-day forecast for ${city.name}.`);
   }
 }
 
 async function loadHomeWeather() {
+  if (homeRequestController) {
+    homeRequestController.abort();
+  }
+
   const controller = new AbortController();
   homeRequestController = controller;
   const location = getHomeLocation();
@@ -166,23 +192,47 @@ async function loadHomeWeather() {
   setHomeWeather({
     current: currentResult.status === 'fulfilled' ? currentResult.value : null,
     forecast: forecastResult.status === 'fulfilled' ? forecastResult.value : null,
-    error: currentResult.status === 'rejected' || forecastResult.status === 'rejected',
+    currentError: currentResult.status === 'rejected',
+    forecastError: forecastResult.status === 'rejected',
   });
+
+  if (homeRequestController === controller) {
+    homeRequestController = null;
+  }
 
   if (getActiveScreen() === SCREENS.HOME) {
     renderHomeWeather();
+
+    const currentOk = currentResult.status === 'fulfilled';
+    const forecastOk = forecastResult.status === 'fulfilled';
+    announce(
+      currentOk && forecastOk
+        ? 'Lagos weather and five-day forecast loaded.'
+        : currentOk
+          ? 'Lagos weather loaded. Five-day forecast unavailable.'
+          : forecastOk
+            ? 'Lagos five-day forecast loaded. Current weather unavailable.'
+            : 'Lagos weather could not be loaded. Please try again.',
+    );
   }
 }
 
 async function loadSelectedWeather(city) {
+  if (!city) {
+    return;
+  }
+
   if (selectedRequestController) {
     selectedRequestController.abort();
+  }
+  if (forecastRequestController) {
+    forecastRequestController.abort();
   }
 
   const controller = new AbortController();
   selectedRequestController = controller;
   const requestId = ++selectedRequestId;
-  const cityLabel = [city?.name, city?.country].filter(Boolean).join(', ');
+  const cityLabel = [city.name, city.country].filter(Boolean).join(', ');
 
   showWeatherLoading(city);
   showForecastLoading();
@@ -201,7 +251,8 @@ async function loadSelectedWeather(city) {
   setSelectedCityWeather({
     current: currentResult.status === 'fulfilled' ? currentResult.value : null,
     forecast: forecastResult.status === 'fulfilled' ? forecastResult.value : null,
-    error: currentResult.status === 'rejected' || forecastResult.status === 'rejected',
+    currentError: currentResult.status === 'rejected',
+    forecastError: forecastResult.status === 'rejected',
   });
 
   if (selectedRequestController === controller) {
@@ -210,7 +261,7 @@ async function loadSelectedWeather(city) {
 
   if (
     getActiveScreen() === SCREENS.SELECTED_WEATHER
-    && getSelectedCity()?.name === city.name
+    && sameCity(getSelectedCity(), city)
   ) {
     renderSelectedWeather();
   }
@@ -227,6 +278,114 @@ async function loadSelectedWeather(city) {
   } else {
     announce(`Weather data could not be loaded for ${cityLabel}. Please try again.`);
   }
+}
+
+/**
+ * Retry only the five-day forecast so valid current weather stays visible.
+ */
+async function retryForecast() {
+  const screen = getActiveScreen();
+  const location = screen === SCREENS.HOME
+    ? getHomeLocation()
+    : screen === SCREENS.SELECTED_WEATHER
+      ? getSelectedCity()
+      : null;
+
+  if (!location) {
+    return;
+  }
+
+  if (forecastRequestController) {
+    forecastRequestController.abort();
+  }
+
+  const controller = new AbortController();
+  forecastRequestController = controller;
+  const requestId = ++forecastRequestId;
+
+  showForecastLoading();
+  announce(`Loading five-day forecast for ${location.name}.`);
+
+  const result = await fetchDailyForecast(location, { signal: controller.signal }).then(
+    (value) => ({ status: 'fulfilled', value }),
+    (reason) => ({ status: 'rejected', reason }),
+  );
+
+  if (
+    controller.signal.aborted
+    || requestId !== forecastRequestId
+    || getActiveScreen() !== screen
+    || (screen === SCREENS.SELECTED_WEATHER && !sameCity(getSelectedCity(), location))
+  ) {
+    return;
+  }
+
+  const forecast = result.status === 'fulfilled' ? result.value : null;
+  const failed = result.status === 'rejected';
+
+  if (screen === SCREENS.HOME) {
+    updateHomeWeather({ forecast, forecastError: failed });
+    renderForecastFromState(getHomeWeather(), true);
+  } else {
+    updateSelectedCityWeather({ forecast, forecastError: failed });
+    renderForecastFromState(getSelectedCityWeather(), false);
+  }
+
+  if (forecastRequestController === controller) {
+    forecastRequestController = null;
+  }
+
+  announce(
+    failed
+      ? `Five-day forecast unavailable for ${location.name}. Please try again.`
+      : `Five-day forecast loaded for ${location.name}.`,
+  );
+}
+
+function renderForecastFromState(weather, isHome) {
+  if (!weather) {
+    showForecastLoading();
+    return;
+  }
+
+  if (weather.forecast) {
+    renderDailyForecast(weather.forecast);
+  } else {
+    showForecastError(
+      isHome
+        ? 'We couldn’t load the Lagos five-day forecast.'
+        : `We couldn’t load the five-day forecast for ${getSelectedCity()?.name || 'this city'}.`,
+    );
+  }
+}
+
+function retryWeather() {
+  if (getActiveScreen() === SCREENS.HOME) {
+    loadHomeWeather();
+    return;
+  }
+
+  if (getActiveScreen() === SCREENS.SELECTED_WEATHER) {
+    loadSelectedWeather(getSelectedCity());
+  }
+}
+
+function sameCity(first, second) {
+  if (!first || !second) {
+    return false;
+  }
+
+  const idMatch = first.id !== null && first.id !== undefined
+    && second.id !== null && second.id !== undefined
+    && String(first.id) === String(second.id);
+  const coordinatesMatch = Math.abs(Number(first.latitude) - Number(second.latitude)) < 0.000001
+    && Math.abs(Number(first.longitude) - Number(second.longitude)) < 0.000001;
+
+  return idMatch || (
+    first.name === second.name
+    && first.country === second.country
+    && coordinatesMatch
+  );
 }
 
 function announce(message) {
@@ -279,6 +438,13 @@ dashboardForm.addEventListener('submit', (event) => {
 
 backButton.addEventListener('click', goHome);
 dashboardBackButton.addEventListener('click', backToSearch);
+
+if (weatherRetryButton) {
+  weatherRetryButton.addEventListener('click', retryWeather);
+}
+if (forecastRetryButton) {
+  forecastRetryButton.addEventListener('click', retryForecast);
+}
 
 loadHomeWeather();
 document.documentElement.dataset.atmosReady = 'true';

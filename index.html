@@ -212,6 +212,10 @@
             <p class="current-weather__feels">Feels like 32°C</p>
           </div>
         </div>
+
+        <button type="button" id="weather-retry-button" class="retry-button" hidden>
+          Try again
+        </button>
       </article>
 
       <dl class="metrics-grid" aria-label="Current weather details">
@@ -352,6 +356,13 @@
             </p>
           </li>
         </ol>
+
+        <div id="forecast-state" class="forecast-state" role="status" hidden>
+          <p id="forecast-message" class="forecast-state__message"></p>
+          <button type="button" id="forecast-retry-button" class="retry-button">
+            Retry forecast
+          </button>
+        </div>
       </section>
     </section>
 
@@ -396,9 +407,15 @@
       </form>
 
       <p class="search-hint" id="search-hint">Start typing to find a city</p>
+      <button type="button" id="search-retry-button" class="retry-button" hidden>
+        Try again
+      </button>
 
       <section class="recent-searches" aria-labelledby="recent-title">
         <h3 id="recent-title" class="section-title">Recent Searches</h3>
+        <p id="recent-empty" class="empty-message" hidden>
+          No recent searches yet. Search for a city to see it here.
+        </p>
         <ul class="chip-list" id="recent-list"></ul>
       </section>
 

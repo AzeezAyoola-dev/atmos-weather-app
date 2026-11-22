@@ -6,6 +6,8 @@
  * Phase 8: recent-city rendering, persistence and direct re-selection.
  * Navigation fix: capture and restore the search view so the result-screen
  * back arrow can return to the exact query and results the user left behind.
+ * Phase 9: explicit loading, empty, invalid and error states with retry and a
+ * helpful empty state for recent searches.
  */
 
 import { fetchCityResults } from './api.js';
@@ -18,8 +20,9 @@ export const SEARCH_DEBOUNCE_MS = 350;
 const DEFAULT_HINT = 'Start typing to find a city';
 const SHORT_HINT = 'Enter at least two characters to search';
 const LOADING_HINT = 'Searching cities…';
-const NO_RESULTS_HINT = 'No matching cities found';
+const NO_RESULTS_HINT = 'No matching cities found. Try another spelling or a nearby city.';
 const ERROR_HINT = 'We couldn’t load results. Check your connection and try again.';
+const RECENT_EMPTY_MESSAGE = 'No recent searches yet. Search for a city to see it here.';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -42,8 +45,10 @@ export function formatCityLabel(city) {
  *
  * @param {object} elements Existing DOM elements from index.html.
  * @param {HTMLElement} [elements.recentList] Container for recent-city chips.
+ * @param {HTMLElement} [elements.recentEmpty] Empty state for recent searches.
+ * @param {HTMLButtonElement} [elements.retryButton] Retry action for failed searches.
  * @param {Function} [elements.onCitySelected] Called after a result is selected.
- * @returns {{runQuery: Function, reset: Function, clear: Function, captureState: Function, restoreState: Function}} Controller API.
+ * @returns {{runQuery: Function, reset: Function, clear: Function, retry: Function, captureState: Function, restoreState: Function}} Controller API.
  */
 export function createCitySearchController({
   form,
@@ -53,6 +58,8 @@ export function createCitySearchController({
   results,
   list,
   recentList,
+  recentEmpty,
+  retryButton,
   status,
   onCitySelected,
 }) {
@@ -72,6 +79,12 @@ export function createCitySearchController({
       form.setAttribute('aria-busy', 'true');
     } else {
       form.removeAttribute('aria-busy');
+    }
+  }
+
+  function setRetryVisible(isVisible) {
+    if (retryButton) {
+      retryButton.hidden = !isVisible;
     }
   }
 
@@ -108,6 +121,7 @@ export function createCitySearchController({
   function reset(message = DEFAULT_HINT, state = 'idle') {
     cancelPendingWork();
     clearResults();
+    setRetryVisible(false);
     setHint(message, state);
   }
 
@@ -117,6 +131,7 @@ export function createCitySearchController({
     const query = input.value.trim();
     cancelPendingWork();
     clearResults();
+    setRetryVisible(false);
 
     if (query.length < SEARCH_MIN_QUERY_LENGTH) {
       setHint(query.length === 0 ? DEFAULT_HINT : SHORT_HINT);
@@ -139,6 +154,7 @@ export function createCitySearchController({
         }
 
         if (cities.length === 0) {
+          setRetryVisible(false);
           setHint(NO_RESULTS_HINT, 'empty');
           announce(NO_RESULTS_HINT);
           return;
@@ -151,6 +167,7 @@ export function createCitySearchController({
           return;
         }
 
+        setRetryVisible(true);
         setHint(ERROR_HINT, 'error');
         announce(ERROR_HINT);
       } finally {
@@ -168,6 +185,7 @@ export function createCitySearchController({
     list.replaceChildren(...rows);
     results.hidden = false;
     hint.hidden = true;
+    setRetryVisible(false);
     setBusy(false);
   }
 
@@ -175,7 +193,14 @@ export function createCitySearchController({
     if (!recentList) {
       return;
     }
-    recentList.replaceChildren(...loadRecentCities().map(createRecentChip));
+
+    const cities = loadRecentCities();
+    recentList.replaceChildren(...cities.map(createRecentChip));
+
+    if (recentEmpty) {
+      recentEmpty.textContent = RECENT_EMPTY_MESSAGE;
+      recentEmpty.hidden = cities.length > 0;
+    }
   }
 
   function createRecentChip(city) {
@@ -256,6 +281,13 @@ export function createCitySearchController({
     input.focus();
   }
 
+  function retry() {
+    if (input.value.trim().length < SEARCH_MIN_QUERY_LENGTH) {
+      return;
+    }
+    handleInput();
+  }
+
   function captureState() {
     const rows = Array.from(list.querySelectorAll('.result-row'));
     return {
@@ -264,6 +296,7 @@ export function createCitySearchController({
       hintText: hint.textContent,
       hintState: hint.dataset.state || 'idle',
       hintHidden: hint.hidden,
+      retryHidden: retryButton ? retryButton.hidden : true,
       resultsHidden: results.hidden,
       cities: lastRenderedCities.slice(),
       pressedIndex: rows.findIndex((row) => row.getAttribute('aria-pressed') === 'true'),
@@ -281,6 +314,7 @@ export function createCitySearchController({
     hint.textContent = state.hintText;
     hint.dataset.state = state.hintState;
     hint.hidden = state.hintHidden;
+    setRetryVisible(state.retryHidden === false);
 
     if (state.cities.length === 0) {
       clearResults();
@@ -303,10 +337,13 @@ export function createCitySearchController({
     handleInput();
   });
   clearButton.addEventListener('click', clear);
+  if (retryButton) {
+    retryButton.addEventListener('click', retry);
+  }
 
   renderRecentCities();
 
-  return Object.freeze({ runQuery, reset, clear, captureState, restoreState });
+  return Object.freeze({ runQuery, reset, clear, retry, captureState, restoreState });
 }
 
 function createIcon(symbolId, className) {

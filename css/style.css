@@ -695,6 +695,63 @@ a {
   color: var(--app-text-secondary);
 }
 
+/* --- Phase 9 states ------------------------------------------------------ */
+
+.retry-button {
+  min-height: 44px;
+  margin: var(--space-12) 0 0;
+  padding: var(--space-8) var(--space-16);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-full);
+  color: var(--app-text);
+  font-size: var(--font-size-body-small);
+  font-weight: 600;
+  line-height: var(--line-height-body-small);
+  cursor: pointer;
+}
+
+.retry-button:hover {
+  border-color: var(--app-accent-strong);
+}
+
+.current-weather .retry-button {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+  color: var(--app-text);
+}
+
+.empty-message {
+  margin: 0 0 var(--space-12);
+  color: var(--app-text-secondary);
+  font-size: var(--font-size-body-small);
+  line-height: var(--line-height-body-small);
+}
+
+.forecast-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin-top: var(--space-12);
+  padding: var(--space-16);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-medium);
+}
+
+.forecast-state__message {
+  margin: 0;
+  color: var(--app-text-secondary);
+  font-size: var(--font-size-body-small);
+  line-height: var(--line-height-body-small);
+}
+
+.forecast-state .retry-button {
+  margin: 0;
+}
+
 /* --- Larger screens ------------------------------------------------------ */
 
 @media (min-width: 600px) {
