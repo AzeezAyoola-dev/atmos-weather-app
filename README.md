@@ -8,12 +8,11 @@ the Open-Meteo Forecast API for current conditions and the five-day forecast.
 
 ## Status
 
-**Phase 10 — accessibility and responsive QA complete.** The approved Phase 9
-app was audited at 320px, 375px, 390px, 768px, 1024px and 1440px. Two verified
-issues were fixed without changing the approved design: the search error text
-now uses the high-contrast text token, and the skip link and recent-search
-chips now have 44px minimum hit targets. All regressions, JavaScript syntax
-checks and `git diff --check` pass. Deployment remains reserved for Phase 11.
+**Phase 11 — published and verified.** The approved app is live at
+[azeezayoola-dev.github.io/atmos-weather-app](https://azeezayoola-dev.github.io/atmos-weather-app/)
+via GitHub Pages from `main` at the site root. All commits and the approved
+design are preserved. Live checks passed for real Open-Meteo data, search,
+navigation, recent searches, loading/error states and responsive layout.
 
 ## Features
 
@@ -55,8 +54,14 @@ public Inter stylesheet.
 
 ## Live deployment
 
-Pending Phase 11 publication. This section will be updated with the verified
-live URL after the static site is deployed and tested.
+**Live app:** <https://azeezayoola-dev.github.io/atmos-weather-app/>
+
+**Source repository:** <https://github.com/AzeezAyoola-dev/atmos-weather-app>
+
+The public repository is deployed with GitHub Pages from the `main` branch at
+the site root. No build step or environment variable is required: `index.html`
+is the entry point and all CSS/JavaScript paths are relative. The full commit
+history is retained.
 
 ## Project structure
 
@@ -292,14 +297,57 @@ live region. No other approved colours have changed.
   point-in-time check, not fixed expected data.
 - There is still no offline cache/service worker, and upstream outages or rate
   limits remain outside the app's control.
-- Deployment is deferred to Phase 11.
+- Deployment was completed in Phase 11; see [Live deployment](#live-deployment).
+
+## Phase 11 deployment verification
+
+### Publication
+
+- Public repository: <https://github.com/AzeezAyoola-dev/atmos-weather-app>
+- Live site: <https://azeezayoola-dev.github.io/atmos-weather-app/>
+- Platform: GitHub Pages, from `main`, site root (`/`), status built.
+- All 15 commits and the approved Phase 10 files were pushed unchanged; only
+  README presentation and ignore rules were added for delivery.
+
+### Live checks
+
+- The deployed HTML, CSS and six ES modules all return HTTP 200 with correct
+  content types.
+- Real Open-Meteo smoke test on the deployed origin: HOME showed Lagos, Nigeria
+  with live current weather and five forecast rows; searching Abuja showed the
+  selected city with its own live weather and WMO icons; back navigation
+  returned HOME to Lagos; the recent list updated; no console errors or
+  uncaught exceptions.
+- Full Phase 10 audit against the deployed origin: **182/182 checks passed**
+  across 320px, 375px, 390px, 768px, 1024px and 1440px, with 26 viewport/state
+  snapshots, **0 axe-core violations**, **0 console errors** and **0 uncaught
+  exceptions**.
+- Loading state on the deployed origin: card and forecast list were busy, five
+  placeholder forecast rows were shown, then the same page resolved to live
+  data with no retry visible.
+- Error states on the deployed origin: HOME current-weather failure showed a
+  friendly message and retry; forecast-only failure kept current weather and
+  showed a forecast-specific message, unavailable rows and a retry. Search
+  failure was covered by the Phase 10 accessibility audit.
+- Recent-search persistence on the deployed origin: a city selected through
+  real geocoding remained in storage and reappeared as a recent chip after a
+  full page refresh.
+
+### Delivery limitations
+
+- No physical phone or screen reader was available; responsive and focus checks
+  used Chrome emulation and axe-core, not real-device or NVDA/VoiceOver testing.
+- Live weather values vary with Open-Meteo results and are point-in-time checks,
+  not fixed expected values.
+- Open-Meteo rate limits and upstream outages remain outside the app's control;
+  the app reports them and offers retry rather than caching stale forecasts.
 
 ## Local setup
 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/<your-account>/atmos-weather-app.git
+   git clone https://github.com/AzeezAyoola-dev/atmos-weather-app.git
    cd atmos-weather-app
    ```
 
