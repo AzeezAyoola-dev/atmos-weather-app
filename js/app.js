@@ -4,7 +4,7 @@
  * Phase 5: view switching and city search.
  * Phase 6: load and render current weather for the selected city.
  * Phase 7: load and render the five-day forecast for the selected city.
- * Recent search persistence remains reserved for a later phase.
+ * Phase 8: recent-search chips are rendered and reused for direct selection.
  */
 
 import { fetchCurrentWeather, fetchDailyForecast } from './api.js';
@@ -27,6 +27,7 @@ const backButton = searchView.querySelector('.icon-button');
 const citySearch = document.getElementById('city-search');
 const clearButton = searchView.querySelector('.search-clear');
 const searchHint = document.getElementById('search-hint');
+const recentList = document.getElementById('recent-list');
 const searchResults = document.getElementById('search-results');
 const resultList = searchResults.querySelector('.result-list');
 const appStatus = document.getElementById('app-status');
@@ -38,6 +39,7 @@ const searchController = createCitySearchController({
   hint: searchHint,
   results: searchResults,
   list: resultList,
+  recentList,
   status: appStatus,
   onCitySelected: handleCitySelection,
 });

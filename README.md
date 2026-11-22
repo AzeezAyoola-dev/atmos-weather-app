@@ -8,14 +8,11 @@ the Open-Meteo Forecast API for current conditions and the five-day forecast.
 
 ## Status
 
-**Phase 7 — five-day forecast integration.** Selecting a city in Search
-Locations returns to the Weather Dashboard and fetches both current conditions
-and the five-day forecast from the Open-Meteo Forecast API using the selected
-city's latitude, longitude and timezone. The dashboard city, country, local
-date/time, current readings and the five existing forecast rows all update in
-place, with loading and error feedback.
-
-Recent-search persistence and deployment are reserved for later phases.
+**Phase 8 — recent searches and LocalStorage.** Selecting a city from search
+results or recent history now saves it to a persistent, ordered recent-search
+list. The Search Locations chips are rendered from that list instead of static
+placeholders, and selecting a chip returns directly to that city's weather
+dashboard. Deployment remains reserved for a later phase.
 
 ## Stack
 
@@ -24,10 +21,10 @@ Recent-search persistence and deployment are reserved for later phases.
 - Vanilla JavaScript (ES modules)
 - Open-Meteo Geocoding API
 - Open-Meteo Forecast API for current conditions and five-day forecast
-- Browser `fetch` and `AbortController`
+- Browser `fetch`, `AbortController` and `localStorage`
 
-No frameworks, no backend and no package dependencies. `localStorage` is
-reserved for a later phase and is not used in Phase 6.
+No frameworks, no backend and no package dependencies. Recent searches are
+persisted with `localStorage` under `atmos.recentCities.v1`.
 
 ## Project structure
 
@@ -43,7 +40,7 @@ ATMOS/
 │   ├── weather.js         Weather codes, formatting and dashboard rendering
 │   ├── search.js          Validation, debounce, rendering and selection
 │   ├── state.js           Shared in-memory selected-city state
-│   └── storage.js         Recent-search storage contract
+│   └── storage.js         Recent-search persistence and validation
 ├── assets/
 ├── design/                Existing tokens and screenshots
 ├── documentation/         Existing PRD
@@ -80,7 +77,8 @@ of truth. The **warm palette** from those screenshots is authoritative.
 - Loading, no-results and network-error states use the existing hint element and
   are announced through the existing live region.
 - Selecting a result stores `name`, `region`, `country`, `latitude`, `longitude`
-  and `timezone` in `js/state.js`. Nothing is persisted yet.
+  and `timezone` in `js/state.js`. Recent-search persistence is handled
+  separately in Phase 8.
 
 ## Phase 6 current weather behaviour
 
@@ -108,6 +106,21 @@ of truth. The **warm palette** from those screenshots is authoritative.
   five-row structure is preserved.
 - Forecast loading and errors use the existing rows and are announced through
   the live region without preventing the current weather from rendering.
+
+## Phase 8 recent-search behaviour
+
+- Selecting a city from search results saves it only after a successful
+  selection.
+- Each saved city stores `name`, `country`, `latitude`, `longitude` and
+  `timezone` under the `atmos.recentCities.v1` LocalStorage key.
+- The five most recent unique cities are shown newest first; reselecting a city
+  moves it to the front rather than creating a duplicate.
+- Recent chips are loaded on startup, rendered in the existing chip list, and
+  selectable without running another geocoding search.
+- Malformed stored data, empty storage and unavailable LocalStorage are handled
+  without errors; a valid in-memory list is retained for the current session.
+- The hardcoded Lagos, Abuja and Ibadan chips are no longer part of the app
+  markup.
 
 ## Accessibility note
 

@@ -2,11 +2,13 @@
  * City search layer.
  *
  * Phase 5: input validation, debounced geocoding, result rendering, feedback
- * states and city selection. No weather or storage behaviour lives here.
+ * states and city selection.
+ * Phase 8: recent-city rendering, persistence and direct re-selection.
  */
 
 import { fetchCityResults } from './api.js';
 import { setSelectedCity } from './state.js';
+import { loadRecentCities, saveRecentCity } from './storage.js';
 
 export const SEARCH_MIN_QUERY_LENGTH = 2;
 export const SEARCH_DEBOUNCE_MS = 350;
@@ -37,6 +39,7 @@ export function formatCityLabel(city) {
  * Create the controller for the Search Locations screen.
  *
  * @param {object} elements Existing DOM elements from index.html.
+ * @param {HTMLElement} [elements.recentList] Container for recent-city chips.
  * @param {Function} [elements.onCitySelected] Called after a result is selected.
  * @returns {{runQuery: Function, reset: Function, clear: Function}} Controller API.
  */
@@ -47,6 +50,7 @@ export function createCitySearchController({
   hint,
   results,
   list,
+  recentList,
   status,
   onCitySelected,
 }) {
@@ -162,6 +166,27 @@ export function createCitySearchController({
     setBusy(false);
   }
 
+  function renderRecentCities() {
+    if (!recentList) {
+      return;
+    }
+    recentList.replaceChildren(...loadRecentCities().map(createRecentChip));
+  }
+
+  function createRecentChip(city) {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+
+    button.type = 'button';
+    button.className = 'chip';
+    button.textContent = city.name;
+    button.setAttribute('aria-label', `Select recent city ${city.name}, ${city.country}`);
+    button.addEventListener('click', () => selectCity(city, null));
+
+    item.append(button);
+    return item;
+  }
+
   function createResultRow(city) {
     const item = document.createElement('li');
     const button = document.createElement('button');
@@ -193,14 +218,20 @@ export function createCitySearchController({
 
   function selectCity(city, selectedButton) {
     const selectedCity = setSelectedCity(city);
+    if (!selectedCity) {
+      return;
+    }
+
+    saveRecentCity(selectedCity);
+    renderRecentCities();
 
     list.querySelectorAll('.result-row').forEach((row) => {
       row.setAttribute('aria-pressed', row === selectedButton ? 'true' : 'false');
     });
 
-    input.value = city.name;
+    input.value = selectedCity.name;
     clearButton.hidden = false;
-    announce(`${city.name}, ${formatCityLabel(city)} selected.`);
+    announce(`${selectedCity.name}, ${formatCityLabel(selectedCity)} selected.`);
 
     if (typeof onCitySelected === 'function') {
       onCitySelected(selectedCity);
@@ -226,6 +257,8 @@ export function createCitySearchController({
     handleInput();
   });
   clearButton.addEventListener('click', clear);
+
+  renderRecentCities();
 
   return Object.freeze({ runQuery, reset, clear });
 }
