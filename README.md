@@ -15,7 +15,19 @@ now uses the high-contrast text token, and the skip link and recent-search
 chips now have 44px minimum hit targets. All regressions, JavaScript syntax
 checks and `git diff --check` pass. Deployment remains reserved for Phase 11.
 
-## Stack
+## Features
+
+- Fixed Lagos, Nigeria HOME dashboard with live current conditions.
+- City search using Open-Meteo geocoding with debounced results and validation.
+- Separate SELECTED WEATHER state for searched cities, independent of HOME.
+- Five-day forecast with per-day WMO weather icons and labelled highs/lows.
+- Recent searches persisted in `localStorage`, newest first.
+- Graceful loading, empty, no-results, network-error, retry and not-found states.
+- Accessible three-screen navigation, visible focus, live announcements and
+  reduced-motion support.
+- Responsive warm-palette design preserved from the approved Figma screens.
+
+## Technologies
 
 - HTML5
 - CSS3
@@ -26,6 +38,25 @@ checks and `git diff --check` pass. Deployment remains reserved for Phase 11.
 
 No frameworks, no backend and no package dependencies. Recent searches are
 persisted with `localStorage` under `atmos.recentCities.v1`.
+
+## API attribution
+
+Weather and geocoding data are provided by
+[Open-Meteo](https://open-meteo.com/):
+
+- [Open-Meteo Geocoding API](https://open-meteo.com/en/docs/geocoding-api) —
+  city search.
+- [Open-Meteo Forecast API](https://open-meteo.com/en/docs) — current weather
+  and five-day forecast.
+
+Open-Meteo is free for non-commercial use and requires no API key. ATMOS sends
+no credentials to any service. Typography is loaded from Google Fonts using the
+public Inter stylesheet.
+
+## Live deployment
+
+Pending Phase 11 publication. This section will be updated with the verified
+live URL after the static site is deployed and tested.
 
 ## Project structure
 
@@ -57,6 +88,16 @@ of truth. The **warm palette** from those screenshots is authoritative.
 - Design tokens: `design/design-tokens.tokens (2).json`
 - CSS tokens: `css/variables.css`
 - Screenshots: `design/screenshots/`
+
+### Screenshots
+
+| Home dashboard | Search locations |
+| --- | --- |
+| ![ATMOS home dashboard](design/screenshots/Dashboard.png) | ![ATMOS search locations](design/screenshots/Search%20Empty%20State.png) |
+
+| Search results | Selected city weather |
+| --- | --- |
+| ![ATMOS search results](design/screenshots/Search%20Results%20state.png) | ![ATMOS selected city weather](design/screenshots/Selected%20City%20Weather.png) |
 
 ## Phase 1 decisions
 
@@ -253,11 +294,31 @@ live region. No other approved colours have changed.
   limits remain outside the app's control.
 - Deployment is deferred to Phase 11.
 
-## Local development
+## Local setup
 
-Because the app uses ES modules, serve it over HTTP rather than opening
-`index.html` directly with `file://`. A local static server such as the VS Code
-Live Server extension is sufficient.
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/<your-account>/atmos-weather-app.git
+   cd atmos-weather-app
+   ```
+
+2. Serve the project root over HTTP. Because the app uses ES modules, opening
+   `index.html` directly with `file://` will not work. Any static server is
+   sufficient, for example:
+
+   ```bash
+   npx serve .
+   ```
+
+   Or use the VS Code Live Server extension and open `index.html`.
+
+3. Open the local URL printed by the server (usually `http://localhost:3000`
+   or `http://127.0.0.1:5500`). No build step, package install or environment
+   variable is required.
+
+Deployment uses the same static root: `index.html` is the entry point and all
+CSS/JavaScript paths are relative.
 
 ## Scope
 

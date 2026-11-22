@@ -13,3 +13,12 @@ node_modules/
 # Local environment files
 .env
 .env.*
+
+# Logs and caches
+*.log
+.cache/
+coverage/
+
+# Build output (the app has no build step)
+dist/
+build/
