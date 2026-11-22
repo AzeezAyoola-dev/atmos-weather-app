@@ -5,39 +5,41 @@
  * Phase 6: WMO code mapping, local-time formatting and current-weather
  * dashboard rendering.
  * Phase 7: daily forecast rendering in the existing five rows.
+ * Forecast icon fix: each WMO code has a distinct condition icon, and both the
+ * icon and description are derived from the same per-day code.
  */
 
 export const FORECAST_DAYS = 5;
 
 const WEATHER_CONDITIONS = new Map([
   [0, { description: 'Clear sky', icon: 'icon-sun' }],
-  [1, { description: 'Mainly clear', icon: 'icon-sun' }],
+  [1, { description: 'Mainly clear', icon: 'icon-sun-cloud' }],
   [2, { description: 'Partly cloudy', icon: 'icon-partly-cloudy' }],
   [3, { description: 'Overcast', icon: 'icon-cloud' }],
-  [45, { description: 'Fog', icon: 'icon-cloud' }],
-  [48, { description: 'Depositing rime fog', icon: 'icon-cloud' }],
-  [51, { description: 'Light drizzle', icon: 'icon-rain' }],
-  [53, { description: 'Moderate drizzle', icon: 'icon-rain' }],
-  [55, { description: 'Dense drizzle', icon: 'icon-rain' }],
-  [56, { description: 'Light freezing drizzle', icon: 'icon-rain' }],
-  [57, { description: 'Dense freezing drizzle', icon: 'icon-rain' }],
+  [45, { description: 'Fog', icon: 'icon-fog' }],
+  [48, { description: 'Depositing rime fog', icon: 'icon-fog' }],
+  [51, { description: 'Light drizzle', icon: 'icon-drizzle' }],
+  [53, { description: 'Moderate drizzle', icon: 'icon-drizzle' }],
+  [55, { description: 'Dense drizzle', icon: 'icon-drizzle' }],
+  [56, { description: 'Light freezing drizzle', icon: 'icon-freezing-drizzle' }],
+  [57, { description: 'Dense freezing drizzle', icon: 'icon-freezing-drizzle' }],
   [61, { description: 'Slight rain', icon: 'icon-rain' }],
   [63, { description: 'Moderate rain', icon: 'icon-rain' }],
   [65, { description: 'Heavy rain', icon: 'icon-rain' }],
-  [66, { description: 'Light freezing rain', icon: 'icon-rain' }],
-  [67, { description: 'Heavy freezing rain', icon: 'icon-rain' }],
-  [71, { description: 'Slight snow fall', icon: 'icon-cloud' }],
-  [73, { description: 'Moderate snow fall', icon: 'icon-cloud' }],
-  [75, { description: 'Heavy snow fall', icon: 'icon-cloud' }],
-  [77, { description: 'Snow grains', icon: 'icon-cloud' }],
-  [80, { description: 'Slight rain showers', icon: 'icon-rain' }],
-  [81, { description: 'Moderate rain showers', icon: 'icon-rain' }],
-  [82, { description: 'Violent rain showers', icon: 'icon-rain' }],
-  [85, { description: 'Slight snow showers', icon: 'icon-cloud' }],
-  [86, { description: 'Heavy snow showers', icon: 'icon-cloud' }],
-  [95, { description: 'Thunderstorm', icon: 'icon-rain' }],
-  [96, { description: 'Thunderstorm with slight hail', icon: 'icon-rain' }],
-  [99, { description: 'Thunderstorm with heavy hail', icon: 'icon-rain' }],
+  [66, { description: 'Light freezing rain', icon: 'icon-freezing-rain' }],
+  [67, { description: 'Heavy freezing rain', icon: 'icon-freezing-rain' }],
+  [71, { description: 'Slight snow fall', icon: 'icon-snow' }],
+  [73, { description: 'Moderate snow fall', icon: 'icon-snow' }],
+  [75, { description: 'Heavy snow fall', icon: 'icon-snow' }],
+  [77, { description: 'Snow grains', icon: 'icon-snow' }],
+  [80, { description: 'Slight rain showers', icon: 'icon-showers' }],
+  [81, { description: 'Moderate rain showers', icon: 'icon-showers' }],
+  [82, { description: 'Violent rain showers', icon: 'icon-showers' }],
+  [85, { description: 'Slight snow showers', icon: 'icon-snow-showers' }],
+  [86, { description: 'Heavy snow showers', icon: 'icon-snow-showers' }],
+  [95, { description: 'Thunderstorm', icon: 'icon-thunderstorm' }],
+  [96, { description: 'Thunderstorm with slight hail', icon: 'icon-hail' }],
+  [99, { description: 'Thunderstorm with heavy hail', icon: 'icon-hail' }],
 ]);
 
 const UNKNOWN_CONDITION = Object.freeze({ description: 'Unknown conditions', icon: 'icon-cloud' });
