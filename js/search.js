@@ -4,6 +4,8 @@
  * Phase 5: input validation, debounced geocoding, result rendering, feedback
  * states and city selection.
  * Phase 8: recent-city rendering, persistence and direct re-selection.
+ * Navigation fix: capture and restore the search view so the result-screen
+ * back arrow can return to the exact query and results the user left behind.
  */
 
 import { fetchCityResults } from './api.js';
@@ -41,7 +43,7 @@ export function formatCityLabel(city) {
  * @param {object} elements Existing DOM elements from index.html.
  * @param {HTMLElement} [elements.recentList] Container for recent-city chips.
  * @param {Function} [elements.onCitySelected] Called after a result is selected.
- * @returns {{runQuery: Function, reset: Function, clear: Function}} Controller API.
+ * @returns {{runQuery: Function, reset: Function, clear: Function, captureState: Function, restoreState: Function}} Controller API.
  */
 export function createCitySearchController({
   form,
@@ -57,6 +59,7 @@ export function createCitySearchController({
   let debounceTimer = null;
   let activeController = null;
   let requestId = 0;
+  let lastRenderedCities = [];
 
   function setHint(message, state = 'idle') {
     hint.textContent = message;
@@ -97,6 +100,7 @@ export function createCitySearchController({
   }
 
   function clearResults() {
+    lastRenderedCities = [];
     list.replaceChildren();
     results.hidden = true;
   }
@@ -159,6 +163,7 @@ export function createCitySearchController({
   }
 
   function renderResults(cities) {
+    lastRenderedCities = cities.slice();
     const rows = cities.map(createResultRow);
     list.replaceChildren(...rows);
     results.hidden = false;
@@ -251,6 +256,47 @@ export function createCitySearchController({
     input.focus();
   }
 
+  function captureState() {
+    const rows = Array.from(list.querySelectorAll('.result-row'));
+    return {
+      query: input.value,
+      clearHidden: clearButton.hidden,
+      hintText: hint.textContent,
+      hintState: hint.dataset.state || 'idle',
+      hintHidden: hint.hidden,
+      resultsHidden: results.hidden,
+      cities: lastRenderedCities.slice(),
+      pressedIndex: rows.findIndex((row) => row.getAttribute('aria-pressed') === 'true'),
+    };
+  }
+
+  function restoreState(state) {
+    if (!state) {
+      return;
+    }
+
+    cancelPendingWork();
+    input.value = state.query;
+    clearButton.hidden = state.clearHidden;
+    hint.textContent = state.hintText;
+    hint.dataset.state = state.hintState;
+    hint.hidden = state.hintHidden;
+
+    if (state.cities.length === 0) {
+      clearResults();
+      results.hidden = state.resultsHidden;
+      return;
+    }
+
+    const rows = state.cities.map((city) => createResultRow(city));
+    if (state.pressedIndex >= 0 && rows[state.pressedIndex]) {
+      rows[state.pressedIndex].querySelector('.result-row').setAttribute('aria-pressed', 'true');
+    }
+    list.replaceChildren(...rows);
+    results.hidden = false;
+    setBusy(false);
+  }
+
   input.addEventListener('input', handleInput);
   form.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -260,7 +306,7 @@ export function createCitySearchController({
 
   renderRecentCities();
 
-  return Object.freeze({ runQuery, reset, clear });
+  return Object.freeze({ runQuery, reset, clear, captureState, restoreState });
 }
 
 function createIcon(symbolId, className) {

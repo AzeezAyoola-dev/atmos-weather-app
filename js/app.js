@@ -5,6 +5,8 @@
  * Phase 6: load and render current weather for the selected city.
  * Phase 7: load and render the five-day forecast for the selected city.
  * Phase 8: recent-search chips are rendered and reused for direct selection.
+ * Navigation fix: one explicit three-state controller — HOME, SEARCH PAGE and
+ * SELECTED WEATHER — so each arrow has exactly one destination.
  */
 
 import { fetchCurrentWeather, fetchDailyForecast } from './api.js';
@@ -23,6 +25,7 @@ const dashboardView = document.getElementById('dashboard-view');
 const searchView = document.getElementById('search-view');
 const dashboardForm = dashboardView.querySelector('.search-form');
 const dashboardInput = document.getElementById('dashboard-city-search');
+const dashboardBackButton = document.getElementById('dashboard-back-button');
 const backButton = searchView.querySelector('.icon-button');
 const citySearch = document.getElementById('city-search');
 const clearButton = searchView.querySelector('.search-clear');
@@ -44,32 +47,67 @@ const searchController = createCitySearchController({
   onCitySelected: handleCitySelection,
 });
 
+const NAV_STATE = Object.freeze({
+  HOME: 'home',
+  SEARCH: 'search',
+  SELECTED_WEATHER: 'selected-weather',
+});
+
+let navState = NAV_STATE.HOME;
 let switchingView = false;
 let weatherController = null;
 let weatherRequestId = 0;
+let capturedSearchState = null;
 
-function openSearchView(query = '') {
+/**
+ * The single place that changes screens. SELECTED WEATHER is a distinct state
+ * from HOME: the result back arrow is shown only in that state, and its sole
+ * destination is the Search Page.
+ *
+ * @param {string} nextState One of NAV_STATE.
+ */
+function setNavState(nextState) {
   switchingView = true;
-  dashboardView.hidden = true;
-  searchView.hidden = false;
-  searchController.runQuery(query);
-  citySearch.focus();
+
+  const showSearch = nextState === NAV_STATE.SEARCH;
+  searchView.hidden = !showSearch;
+  dashboardView.hidden = showSearch;
+  dashboardBackButton.hidden = nextState !== NAV_STATE.SELECTED_WEATHER;
+
+  if (showSearch) {
+    citySearch.focus();
+  } else {
+    dashboardInput.focus();
+  }
+
+  navState = nextState;
   switchingView = false;
 }
 
-function openDashboardView() {
-  switchingView = true;
+function openSearchView(query = '') {
+  searchController.runQuery(query);
+  setNavState(NAV_STATE.SEARCH);
+}
+
+function goHome() {
   searchController.reset();
   citySearch.value = '';
   clearButton.hidden = true;
-  searchView.hidden = true;
-  dashboardView.hidden = false;
-  dashboardInput.focus();
-  switchingView = false;
+  capturedSearchState = null;
+  setNavState(NAV_STATE.HOME);
+}
+
+function backToSearch() {
+  searchController.restoreState(capturedSearchState);
+  setNavState(NAV_STATE.SEARCH);
 }
 
 function handleCitySelection(city) {
-  openDashboardView();
+  capturedSearchState = searchController.captureState();
+  searchController.reset();
+  citySearch.value = '';
+  clearButton.hidden = true;
+  setNavState(NAV_STATE.SELECTED_WEATHER);
   loadWeather(city);
 }
 
@@ -144,6 +182,7 @@ dashboardForm.addEventListener('submit', (event) => {
   openSearchView(dashboardInput.value);
 });
 
-backButton.addEventListener('click', openDashboardView);
+backButton.addEventListener('click', goHome);
+dashboardBackButton.addEventListener('click', backToSearch);
 
 document.documentElement.dataset.atmosReady = 'true';
