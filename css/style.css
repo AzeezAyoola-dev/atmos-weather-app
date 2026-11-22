@@ -115,6 +115,9 @@ a {
   top: var(--space-8);
   left: var(--space-8);
   z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: var(--space-8) var(--space-12);
   background: var(--app-text);
   color: var(--app-surface);
@@ -574,8 +577,10 @@ a {
   line-height: var(--line-height-body-default);
 }
 
+/* Error text needs 4.5:1 on both light surfaces; keep the amber token for
+   non-text icons and borders only. */
 .search-hint[data-state="error"] {
-  color: var(--app-accent-strong);
+  color: var(--app-text);
 }
 
 /*
@@ -613,7 +618,7 @@ a {
 }
 
 .chip {
-  min-height: 36px;
+  min-height: 44px;
   padding: var(--space-8) 12px;
   background: var(--app-surface);
   border: 1px solid var(--app-border);
