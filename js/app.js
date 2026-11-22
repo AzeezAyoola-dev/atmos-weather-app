@@ -5,8 +5,8 @@
  * Phase 6: load and render current weather for the selected city.
  * Phase 7: load and render the five-day forecast for the selected city.
  * Phase 8: recent-search chips are rendered and reused for direct selection.
- * Navigation fix: one explicit three-state controller — HOME, SEARCH PAGE and
- * SELECTED WEATHER — so each arrow has exactly one destination.
+ * State fix: home weather (Lagos) and searched-city weather are independent
+ * state slices. Each screen renders only from its own slice.
  */
 
 import { fetchCurrentWeather, fetchDailyForecast } from './api.js';
@@ -20,6 +20,18 @@ import {
 } from './weather.js';
 import './storage.js';
 import { createCitySearchController } from './search.js';
+import {
+  SCREENS,
+  getHomeLocation,
+  getHomeWeather,
+  setHomeWeather,
+  getSelectedCity,
+  setSelectedCity,
+  getSelectedCityWeather,
+  setSelectedCityWeather,
+  getActiveScreen,
+  setActiveScreen,
+} from './state.js';
 
 const dashboardView = document.getElementById('dashboard-view');
 const searchView = document.getElementById('search-view');
@@ -47,32 +59,34 @@ const searchController = createCitySearchController({
   onCitySelected: handleCitySelection,
 });
 
-const NAV_STATE = Object.freeze({
-  HOME: 'home',
-  SEARCH: 'search',
-  SELECTED_WEATHER: 'selected-weather',
-});
-
-let navState = NAV_STATE.HOME;
 let switchingView = false;
-let weatherController = null;
-let weatherRequestId = 0;
+let homeRequestController = null;
+let selectedRequestController = null;
+let selectedRequestId = 0;
 let capturedSearchState = null;
 
 /**
- * The single place that changes screens. SELECTED WEATHER is a distinct state
- * from HOME: the result back arrow is shown only in that state, and its sole
- * destination is the Search Page.
+ * The only place that changes screens. The weather card is shared markup, so
+ * it is re-rendered from the state slice belonging to the screen being shown.
  *
- * @param {string} nextState One of NAV_STATE.
+ * @param {string} nextScreen One of SCREENS.
  */
-function setNavState(nextState) {
+function setActiveView(nextScreen) {
   switchingView = true;
+  setActiveScreen(nextScreen);
 
-  const showSearch = nextState === NAV_STATE.SEARCH;
+  const showSearch = nextScreen === SCREENS.SEARCH;
   searchView.hidden = !showSearch;
   dashboardView.hidden = showSearch;
-  dashboardBackButton.hidden = nextState !== NAV_STATE.SELECTED_WEATHER;
+  dashboardBackButton.hidden = nextScreen !== SCREENS.SELECTED_WEATHER;
+
+  if (!showSearch) {
+    if (nextScreen === SCREENS.HOME) {
+      renderHomeWeather();
+    } else {
+      renderSelectedWeather();
+    }
+  }
 
   if (showSearch) {
     citySearch.focus();
@@ -80,45 +94,94 @@ function setNavState(nextState) {
     dashboardInput.focus();
   }
 
-  navState = nextState;
   switchingView = false;
 }
 
-function openSearchView(query = '') {
-  searchController.runQuery(query);
-  setNavState(NAV_STATE.SEARCH);
-}
+function renderHomeWeather() {
+  const weather = getHomeWeather();
+  const location = getHomeLocation();
 
-function goHome() {
-  searchController.reset();
-  citySearch.value = '';
-  clearButton.hidden = true;
-  capturedSearchState = null;
-  setNavState(NAV_STATE.HOME);
-}
-
-function backToSearch() {
-  searchController.restoreState(capturedSearchState);
-  setNavState(NAV_STATE.SEARCH);
-}
-
-function handleCitySelection(city) {
-  capturedSearchState = searchController.captureState();
-  searchController.reset();
-  citySearch.value = '';
-  clearButton.hidden = true;
-  setNavState(NAV_STATE.SELECTED_WEATHER);
-  loadWeather(city);
-}
-
-async function loadWeather(city) {
-  if (weatherController) {
-    weatherController.abort();
+  if (!weather) {
+    showWeatherLoading(location);
+    showForecastLoading();
+    return;
   }
 
-  const requestId = ++weatherRequestId;
+  if (weather.current) {
+    renderCurrentWeather(location, weather.current);
+  } else {
+    showWeatherError(location);
+  }
+
+  if (weather.forecast) {
+    renderDailyForecast(weather.forecast);
+  } else {
+    showForecastError();
+  }
+}
+
+function renderSelectedWeather() {
+  const weather = getSelectedCityWeather();
+  const city = getSelectedCity();
+
+  if (!weather || !city) {
+    showWeatherLoading(city || getHomeLocation());
+    showForecastLoading();
+    return;
+  }
+
+  if (weather.current) {
+    renderCurrentWeather(city, weather.current);
+  } else {
+    showWeatherError(city);
+  }
+
+  if (weather.forecast) {
+    renderDailyForecast(weather.forecast);
+  } else {
+    showForecastError();
+  }
+}
+
+async function loadHomeWeather() {
   const controller = new AbortController();
-  weatherController = controller;
+  homeRequestController = controller;
+  const location = getHomeLocation();
+
+  if (getActiveScreen() === SCREENS.HOME) {
+    showWeatherLoading(location);
+    showForecastLoading();
+  }
+
+  const [currentResult, forecastResult] = await Promise.allSettled([
+    fetchCurrentWeather(location, { signal: controller.signal }),
+    fetchDailyForecast(location, { signal: controller.signal }),
+  ]);
+
+  if (controller.signal.aborted) {
+    return;
+  }
+
+  // This writes only homeWeather. A search can never overwrite it.
+  setHomeWeather({
+    current: currentResult.status === 'fulfilled' ? currentResult.value : null,
+    forecast: forecastResult.status === 'fulfilled' ? forecastResult.value : null,
+    error: currentResult.status === 'rejected' || forecastResult.status === 'rejected',
+  });
+
+  if (getActiveScreen() === SCREENS.HOME) {
+    renderHomeWeather();
+  }
+}
+
+async function loadSelectedWeather(city) {
+  if (selectedRequestController) {
+    selectedRequestController.abort();
+  }
+
+  const controller = new AbortController();
+  selectedRequestController = controller;
+  const requestId = ++selectedRequestId;
   const cityLabel = [city?.name, city?.country].filter(Boolean).join(', ');
 
   showWeatherLoading(city);
@@ -130,24 +193,30 @@ async function loadWeather(city) {
     fetchDailyForecast(city, { signal: controller.signal }),
   ]);
 
-  if (controller.signal.aborted || requestId !== weatherRequestId) {
+  if (controller.signal.aborted || requestId !== selectedRequestId) {
     return;
+  }
+
+  // This writes only selectedCityWeather. Home weather is left untouched.
+  setSelectedCityWeather({
+    current: currentResult.status === 'fulfilled' ? currentResult.value : null,
+    forecast: forecastResult.status === 'fulfilled' ? forecastResult.value : null,
+    error: currentResult.status === 'rejected' || forecastResult.status === 'rejected',
+  });
+
+  if (selectedRequestController === controller) {
+    selectedRequestController = null;
+  }
+
+  if (
+    getActiveScreen() === SCREENS.SELECTED_WEATHER
+    && getSelectedCity()?.name === city.name
+  ) {
+    renderSelectedWeather();
   }
 
   const currentOk = currentResult.status === 'fulfilled';
   const forecastOk = forecastResult.status === 'fulfilled';
-
-  if (currentOk) {
-    renderCurrentWeather(city, currentResult.value);
-  } else {
-    showWeatherError(city);
-  }
-
-  if (forecastOk) {
-    renderDailyForecast(forecastResult.value);
-  } else {
-    showForecastError();
-  }
 
   if (currentOk && forecastOk) {
     announce(`Current weather and five-day forecast loaded for ${cityLabel}.`);
@@ -158,10 +227,6 @@ async function loadWeather(city) {
   } else {
     announce(`Weather data could not be loaded for ${cityLabel}. Please try again.`);
   }
-
-  if (weatherController === controller) {
-    weatherController = null;
-  }
 }
 
 function announce(message) {
@@ -169,6 +234,36 @@ function announce(message) {
   setTimeout(() => {
     appStatus.textContent = message;
   }, 0);
+}
+
+function openSearchView(query = '') {
+  searchController.runQuery(query);
+  setActiveView(SCREENS.SEARCH);
+}
+
+function goHome() {
+  searchController.reset();
+  citySearch.value = '';
+  clearButton.hidden = true;
+  capturedSearchState = null;
+  setActiveView(SCREENS.HOME);
+}
+
+function backToSearch() {
+  searchController.restoreState(capturedSearchState);
+  setActiveView(SCREENS.SEARCH);
+}
+
+function handleCitySelection(city) {
+  capturedSearchState = searchController.captureState();
+  searchController.reset();
+  citySearch.value = '';
+  clearButton.hidden = true;
+
+  setSelectedCity(city);
+  setSelectedCityWeather(null);
+  setActiveView(SCREENS.SELECTED_WEATHER);
+  loadSelectedWeather(city);
 }
 
 dashboardInput.addEventListener('focus', () => {
@@ -185,4 +280,5 @@ dashboardForm.addEventListener('submit', (event) => {
 backButton.addEventListener('click', goHome);
 dashboardBackButton.addEventListener('click', backToSearch);
 
+loadHomeWeather();
 document.documentElement.dataset.atmosReady = 'true';
